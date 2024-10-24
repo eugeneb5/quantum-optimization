@@ -1,0 +1,126 @@
+import numpy as np 
+import sympy as sp
+from functools import reduce
+
+
+M = np.array([[0,1,1,0,0],[0,0,1,0,1],[0,0,0,1,1],[0,0,0,0,0],[0,0,0,0,0]])
+
+#print(M)
+
+kappa = 0.5
+n = 5
+
+#we assume square matrices? 
+#here n = 5
+
+#h = np.zeros((5,5)) for a 5x5
+h = np.zeros(5)
+
+
+#h[2,3] = -5
+
+
+
+#min_val = np.min(h+M)
+
+#print(min_val)
+
+for k in range(0,n): #range doesn't include n, goes from 0 to n-1 here!!
+
+    total = 0
+
+    for j in range(0,n):
+
+        total += -(M[k,j]+M[j,k])
+
+    h[k] = total + kappa
+
+print(h)
+
+def sigma_z(n,j): #must be that n>j
+
+    #assert n>j
+     #j must be greater than two?
+
+    #I_2 = np.array([1,0],[0,1])
+    I_2 = np.eye(2)
+    S_Z = np.array([[1,0],[0,-1]])
+
+    if j <= 1:
+        TP_1 = np.eye(1)
+    else:
+        TP_1 = reduce(np.kron, [I_2]*(j-1)) #this repeats the tensor product of I_2 j-1 times
+
+    
+    if j >= n:
+        TP_2 = np.eye(1)
+    else:
+
+        TP_2 = reduce(np.kron, [I_2]*(n-j))
+
+    final = np.kron(np.kron(TP_1,S_Z),TP_2)
+    
+    return final
+
+
+#to initialize H_ising now
+
+def H_ising(n,M,kappa):
+
+    #M is the adjacency matrix
+    h = np.zeros(n)
+
+    for k in range(0,n): #range doesn't include n, goes from 0 to n-1 here!!
+
+        total = 0
+
+        for j in range(0,n):
+
+            total += -(M[k,j]+M[j,k])
+
+        h[k] = total + kappa
+
+    #to find H_ising now
+    H = np.zeros((2**n,2**n))
+    H_2 = np.zeros((2**n,2**n))
+    for k in range(0,n):
+
+
+        H_2 += h[k]*sigma_z(n,k+1)
+        
+
+        for j in range(k+1,n): #this doesn't work??!
+
+            H += (M[j,k]*sigma_z(n,k+1)*sigma_z(n,j+1)) 
+    
+    return (H+H_2)
+
+
+
+#issue with dimensions!! fix the sigma_Z fucntion
+
+M = np.array([[0,1,1,0,0],[0,0,1,0,1],[0,0,0,1,1],[0,0,0,0,0],[0,0,0,0,0]])
+
+J = np.array([[0,1,0],[0,0,1],[0,0,0]])  #3 dim case
+
+H = H_ising(3,J,0.5)
+
+print(H)
+
+print("min value is" + str(np.min(H)))
+
+#print(H[19,19])
+
+#print(sigma_z(5,4).shape)
+
+
+
+
+
+    
+
+
+
+
+
+
