@@ -1,8 +1,15 @@
 import numpy as np 
-import sympy as sp
+#import sympy as sp
 from functools import reduce
+from scipy.linalg import expm
+
+import matplotlib.pyplot as plt
+
+from numpy.typing import ArrayLike
 
 
+
+imaginary_num = complex(0,1)
 
 
 
@@ -115,6 +122,241 @@ print(Ising_search(H))
 
 #---------------------------------------------------------------------------#
 
+#time adiabatic problem now
+
+
+
+#figure out how wavefunction evolves in time too
+
+def init_psi(n):
+
+    up_state = (1/(2)**0.5)*np.array([[1],[1]])
+
+    initial = up_state
+    for i in range(n-1):  #n-1 since 1 counts as its self...
+        initial = np.kron(initial,up_state)
+    
+    return initial
+
+def sigma_j(n,i,choice): #must be that n>j
+
+
+    #assert n>j
+     #j must be greater than two?
+
+    #I_2 = np.array([1,0],[0,1])
+    I_2 = np.eye(2)
+    
+    if choice == 'x':
+
+        S = np.array([[0,1],[1,0]])
+
+    if choice == 'y':
+
+        S = np.array([[0,-1j],[1j,0]])
+
+    if choice == 'z':
+
+        S = np.array([[1,0],[0,-1]])
+
+    if i == 1:  
+        TP_1 = np.eye(1)
+    else:
+        TP_1 = reduce(np.kron, [I_2]*(i-1)) #this repeats the tensor product of I_2 j-1 times
+
+    
+    if i==n:
+        TP_2 = np.eye(1)
+    else:
+
+        TP_2 = reduce(np.kron, [I_2]*(n-i))
+
+    final = np.kron(np.kron(TP_1,S),TP_2)
+    
+    return final
+
+
+def sigma_x(n,j): #must be that n>j
+
+    #assert n>j
+     #j must be greater than two?
+
+    #I_2 = np.array([1,0],[0,1])
+    I_2 = np.eye(2)
+    S_X = np.array([[0,1],[-1,0]])
+
+    if j == 1:  
+        TP_1 = np.eye(1)
+    else:
+        TP_1 = reduce(np.kron, [I_2]*(j-1)) #this repeats the tensor product of I_2 j-1 times
+
+    
+    if j==n:
+        TP_2 = np.eye(1)
+    else:
+
+        TP_2 = reduce(np.kron, [I_2]*(n-j))
+
+    final = np.kron(np.kron(TP_1,S_X),TP_2)
+    
+    return final
+
+def Hamiltonian(n,t,t_max,M):
+
+    A = lambda t, t_max: 1 - (t/t_max)
+
+    B = lambda t, t_max: t/t_max
+
+
+    val = np.zeros((2**n,2**n))
+    for i in range(1,n+1):
+        val += sigma_x(n,i)
+
+    
+    final = A(t,t_max)*val - B(t,t_max)*H_ising(n,M,0.5) #kappa = 0.5
+
+    return final
+
+
+
+def adiabatic_evol(t_max, M, n, q=1000):  #assume for now k and q are the same as in the eqn...
+
+    W = init_psi(n)  #W for wavefunction...
+
+
+    dt = t_max/q
+
+    for i in range(q,-1,-1):   #we have -1 to include 0 in range
+
+        W = np.dot(expm(-1j*dt*Hamiltonian(n,i*dt,t_max,M)),W)  #is this matrix multiplication?
+
+        if np.isnan(W).any():
+            print(i)
+            break
+    return W
+
+
+
+#compare to get probabilities:
+# just for specific case of n=5:
+
+#f = adiabatic_evol(1, M, 5)  #is this state normalised?? we can check
+
+#print(f)
+#print(f.shape)
+#print(init_psi(5).shape)
+#print(init_psi(5))
+
+#c = np.linalg.norm(f)
+
+#normalised_f = (1/c)*f
+
+#print(np.linalg.norm(normalised_f))
+
+
+#build a program to write probabilties 
+
+def ground_wf(n,M: ArrayLike):  #is set to be a covector!
+
+    H = H_ising(n,M,0.5) #kappa set to 0.5
+
+    i = Ising_search(H)
+
+    vector = np.zeros((2**n))
+
+    vector[i] = 1
+
+    return vector
+
+
+
+
+
+
+def adiabatic_prob(t_max: list, M: ArrayLike, n, q=10):
+
+    w_0 = np.conjugate(ground_wf(n,M))  #already conjugated
+
+    
+
+    num_val = len(t_max)
+
+    values = np.zeros((num_val,q+1), dtype = complex)  #might be an issue with num_val value...
+
+    j_index = -1
+
+    for t_m in t_max:
+        
+        
+        j_index += 1
+
+        W = init_psi(n)
+
+        dt = t_m/q
+
+        for i in range(q,-1,-1):   #we have -1 to include 0 in range
+
+            W = np.dot(expm(-1j*dt*Hamiltonian(n,i*dt,t_m,M)),W)  #is this matrix multiplication?
+
+            #calculate probabilty
+            #print(j_index)
+            prob = abs(np.vdot(W,w_0))**2/np.vdot(W,W)  #this should be correct...
+
+            # prob = abs(np.vdot(w_0,W)/np.linalg.norm(W))**0.5
+
+            #print(abs(np.vdot(w_0,W)))
+
+            #print(i)
+            
+
+            values[j_index, i] = prob
+
+
+            if np.isnan(W).any():
+                print("values too large, stopped at index: "+str(i))
+                break
+    return values
+
+
+t_max = [1]
+
+
+v = adiabatic_prob(t_max, M, 5)
+
+#print(v)
+
+
+#print(len(v[0]))   #for given example, is 3 x 1001  3 rows, 1001 columns for q =1000
+
+
+def plot_prob(vals):
+
+    rows = len(vals)
+
+    x = np.linspace(0,1,len(vals[0]))
+
+
+
+    for i in range(rows):
+
+        v = vals[i]
+        #reversed = v[::-1]
+
+        plt.plot(x,v)
+
+
+    plt.show()
+
+
+plot_prob(v)
+
+        
+
+        
+g = ground_wf(5,M)
+
+print(abs(np.vdot(g,g)))
+
 
 
 
@@ -126,7 +368,17 @@ print(Ising_search(H))
 
 
 
-    
+
+
+
+
+
+
+
+
+
+
+
 
 
 
