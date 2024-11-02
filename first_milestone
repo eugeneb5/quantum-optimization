@@ -273,7 +273,7 @@ def ground_wf(n,M: ArrayLike):  #is set to be a covector!
 
 
 
-def adiabatic_prob(t_max: list, M: ArrayLike, n, q=10):
+def adiabatic_prob(t_max: list, M: ArrayLike, n, q=1000):
 
     w_0 = np.conjugate(ground_wf(n,M))  #already conjugated
 
@@ -318,7 +318,7 @@ def adiabatic_prob(t_max: list, M: ArrayLike, n, q=10):
     return values
 
 
-t_max = [1]
+t_max = [10]
 
 
 v = adiabatic_prob(t_max, M, 5)
