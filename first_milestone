@@ -138,6 +138,8 @@ def init_psi(n):
     
     return initial
 
+
+
 def sigma_j(n,i,choice): #must be that n>j
 
 
@@ -183,7 +185,7 @@ def sigma_x(n,j): #must be that n>j
 
     #I_2 = np.array([1,0],[0,1])
     I_2 = np.eye(2)
-    S_X = np.array([[0,1],[-1,0]])
+    S_X = np.array([[0,1],[1,0]])
 
     if j == 1:  
         TP_1 = np.eye(1)
@@ -273,11 +275,11 @@ def ground_wf(n,M: ArrayLike):  #is set to be a covector!
 
 
 
-def adiabatic_prob(t_max: list, M: ArrayLike, n, q=1000):
+def adiabatic_prob(t_max: list, M: ArrayLike, n, q=200):
 
-    w_0 = np.conjugate(ground_wf(n,M))  #already conjugated
+    #w_0 = np.conjugate(ground_wf(n,M))  #already conjugated
 
-    
+    w_0 = ground_wf(n,M)
 
     num_val = len(t_max)
 
@@ -294,22 +296,29 @@ def adiabatic_prob(t_max: list, M: ArrayLike, n, q=1000):
 
         dt = t_m/q
 
-        for i in range(q,-1,-1):   #we have -1 to include 0 in range
+        for i in range(0,q+1):   #we have -1 to include 0 in range #original range(q,-1,-1)
 
+
+            
             W = np.dot(expm(-1j*dt*Hamiltonian(n,i*dt,t_m,M)),W)  #is this matrix multiplication?
 
             #calculate probabilty
-            #print(j_index)
-            prob = abs(np.vdot(W,w_0))**2/np.vdot(W,W)  #this should be correct...
+            norm = abs(np.vdot(W,W))
 
-            # prob = abs(np.vdot(w_0,W)/np.linalg.norm(W))**0.5
-
-            #print(abs(np.vdot(w_0,W)))
-
-            #print(i)
             
 
-            values[j_index, i] = prob
+            prob = abs(((np.vdot(np.conjugate(W),w_0))))**2/norm  #this should be correct...
+
+            #print("this is the prob"+str(prob))
+
+            #print(W.shape)
+
+            #print(abs(np.vdot(w_0,W)**2/np.vdot(W,W)))
+
+            
+            
+
+            values[j_index, i] = np.real(prob)
 
 
             if np.isnan(W).any():
@@ -318,7 +327,7 @@ def adiabatic_prob(t_max: list, M: ArrayLike, n, q=1000):
     return values
 
 
-t_max = [10]
+t_max = [1,2,5,10,100]
 
 
 v = adiabatic_prob(t_max, M, 5)
@@ -336,14 +345,17 @@ def plot_prob(vals):
     x = np.linspace(0,1,len(vals[0]))
 
 
+    for j in vals:
 
-    for i in range(rows):
+        for i in range(rows):
 
-        v = vals[i]
-        #reversed = v[::-1]
+            v = vals[i]
+       
+            plt.plot(x,v)
 
-        plt.plot(x,v)
+    plt.ylabel("Success Probability")
 
+    plt.xlabel("1/t_max")
 
     plt.show()
 
