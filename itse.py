@@ -152,7 +152,7 @@ psi_0 = psi_initial(5)
 
 
 
-r = RK4(5,100,1000,psi_0,H,is_time_dependent=False)
+r = RK4(5,50,1000,psi_0,H,is_time_dependent=False)
 
 print(r.shape)
 
@@ -169,7 +169,9 @@ def graph_E_res(H_classic, values, known_eigenvalue):  #requires knowledge of wh
 
     n = len(values)
 
-    y_val = np.zeroes(n)
+    x_val = np.linspace(0,n,n)
+
+    y_val = np.zeros(n)
 
     for i in range(n):
 
@@ -179,7 +181,23 @@ def graph_E_res(H_classic, values, known_eigenvalue):  #requires knowledge of wh
 
         y_val[i] = E_actual - known_eigenvalue
 
-        
+    plt.plot(x_val, y_val)
+
+
+    plt.show()
+
+
+#check for this basic example...
+
+graph_E_res(H, r, -6.5)
+
+
+#now we try for time dependent adiabatic theorem
+
+
+
+
+    
 
         
 

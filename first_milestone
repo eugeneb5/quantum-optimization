@@ -6,10 +6,11 @@ from scipy.linalg import expm
 import matplotlib.pyplot as plt
 
 from numpy.typing import ArrayLike
+import networkx as nx
 
 
 
-imaginary_num = complex(0,1)
+
 
 
 
@@ -335,7 +336,7 @@ def adiabatic_prob(t_max: list, M: ArrayLike, n, q=150):
 t_max = [1,2,5,10,100]
 
 
-v = adiabatic_prob(t_max, M, 5)
+###v = adiabatic_prob(t_max, M, 5)
 
 #print(v)
 
@@ -365,7 +366,7 @@ def plot_prob(vals):
     plt.show()
 
 
-plot_prob(v)
+#plot_prob(v)
 
 
 def plot_wavefunction_evolution(vals):
@@ -393,7 +394,57 @@ def plot_wavefunction_evolution(vals):
     
 
 
-#use np.linalg for hamiltonian...is there any benefit in showing the hamiltonian...
+# now we want to measure the annealing schedule based on N:
+
+#first we want to construct a random adjacency matrix,M , of dimension N:
+
+def generate_adjacency_matrix(n):
+
+    M = np.zeros((n,n), dtype = int)  #put dtype to ensure no floats in zero entries
+
+
+    for i in range(n):
+        for j in range(i+1,n):  #add i+1 to ensure they aren't self connected - can this be added though??
+
+            edge = np.random.choice([0,1])
+
+            M[i,j] = edge
+
+    return M
+
+
+def visualize_graph(adj_matrix):
+
+    graph = nx.from_numpy_matrix(adj_matrix)
+
+    plt.figure(figsize=(8, 8))  # Set the figure size
+    nx.draw(
+        graph,
+        with_labels=True,            # Show node labels
+        node_color='skyblue',        # Node color
+        node_size=500,               # Node size
+        edge_color='gray',           # Edge color
+        font_size=10,                # Font size for labels
+    )
+    plt.title("Graph Visualization")
+    plt.show()
+
+
+
+
+#test generate and visualize the graph!!
+
+g = generate_adjacency_matrix(5)
+
+visualize_graph(g)
+
+
+
+
+
+
+
+
 
 
 
