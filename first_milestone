@@ -111,15 +111,15 @@ J = np.array([[0,1,0],[0,0,1],[0,0,0]])  #3 dim case
 
 H = H_ising(5,M,0.5)
 
-print(H)
+#print(H)
 
-print("min value is" + str(np.min(H)))
+#print("min value is" + str(np.min(H)))
 
 #print(H[19,19])
 
 #print(sigma_z(5,4).shape)
 
-print(Ising_search(H))
+#print(Ising_search(H))
 
 #---------------------------------------------------------------------------#
 
@@ -309,7 +309,7 @@ def adiabatic_prob(t_max: list, M: ArrayLike, n, q=150):
             W = np.dot(expm(-1j*dt*Hamiltonian(n,i*dt,t_m,M)),W)  #is this matrix multiplication?
 
             #calculate probabilty
-            norm = abs(np.vdot(W,W))
+            norm = abs(np.vdot(W,W))  #norm should be conserved...since unitary operator?
 
             
 
@@ -432,11 +432,115 @@ def visualize_graph(adj_matrix):
 
 
 
+def verify_min_value_H(H_ising):  #this function returns a tuple!!
+
+    minimum_value = np.min(H_ising)
+
+    i = Ising_search(H_ising)
+
+    if minimum_value == H_ising[i,i]:
+        return True, minimum_value
+    else:
+
+        return False
+
+
+
+
+
+
+
 #test generate and visualize the graph!!
 
-g = generate_adjacency_matrix(5)
+#n = 6
 
-visualize_graph(g)
+#g = generate_adjacency_matrix(n)
+
+##visualize_graph(g)
+
+#H = H_ising(n,g,0.5)
+
+#print(verify_min_value_H(H))   H is always diagonal!
+
+#------------------------------------------
+
+
+
+
+
+
+
+def graph_annealing_time_against_N(q,list_of_dimensions,t_max_step):
+
+
+    tau = np.zeros(len(list_of_dimensions))
+
+    for index, n in enumerate(list_of_dimensions):
+
+        
+
+        g = generate_adjacency_matrix(n)
+
+        w_0 = ground_wf(n,g)
+
+        
+        tau_index = index
+        
+
+        t_max = 0.5  #start with this for t_max?
+
+        success = False
+
+        while success == False:
+
+            W = init_psi(n)
+
+            
+
+            dt = t_max/q
+
+            for i in range(0,q+1):
+
+                W = np.dot(expm(-1j*dt*Hamiltonian(n,i*dt,t_max,M)),W)  
+
+            #calculate probabilty
+                norm = abs(np.vdot(W,W))  #norm should be conserved...since unitary operator?
+                prob = abs(((np.vdot(np.conjugate(W),w_0))))**2/norm 
+
+                if prob >= 0.99:
+
+                    success = True
+
+                    tau[tau_index] = t_max
+
+                    break
+
+            t_max += t_max_step
+
+    x_val = list_of_dimensions
+
+    y_val = tau
+
+    plt.plot(x_val,y_val)
+
+    plt.show()
+
+                    
+
+
+
+
+
+l = [3,4,5,6,7]
+
+graph_annealing_time_against_N(100,l,0.5)
+
+
+
+
+
+
+
 
 
 
