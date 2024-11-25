@@ -691,23 +691,31 @@ def generate_valid_adjacency_matrix(n):
     return generated_matrix
 
 
-n = 7
+#-------------------------------TEST
 
-g_v = generate_valid_adjacency_matrix(n)
+# n = 7
 
-visualize_graph(g_v)
+# g_v = generate_valid_adjacency_matrix(n)
 
-eigenvalue_graph(g_v, 500, 150, n)
+# visualize_graph(g_v)
 
-plot_prob(adiabatic_prob([1,10,100,1000],g_v,n,500))
+# eigenvalue_graph(g_v, 500, 150, n)
 
+# plot_prob(adiabatic_prob([1,10,100,1000],g_v,n,500))
 
+#---------------------------------------
 
 
 
             
 
+def graphs_for_the_poster(n,M,t_max,q):
 
+    g = generate_adjacency_matrix(n)
+
+    eigenvalue_graph(g)
+
+    eigenvalue_graph(M)
 
         
 
@@ -722,6 +730,90 @@ plot_prob(adiabatic_prob([1,10,100,1000],g_v,n,500))
 
 
 
+def E_res(M,n, T_range,T_num,q):
+
+    H_classical = H_ising(n,M,0.5)
+
+    E_0 = np.min(H_classical)
+
+
+    #T_num = int(T_range/T_step)
+
+    t_max_values = np.linspace(1,T_range,num = T_num)
+
+    E_res_values = np.zeros(T_num)
+
+
+    w_0 = ground_wf(n,M)
+
+    t_max_index = -1
+
+    found = False
+
+    index_of_zero_E_res = None
+
+    for t_max in t_max_values:
+
+
+        W = init_psi(n)
+
+        t_max_index += 1
+
+        dt = t_max/q
+
+        for i in range(0,q+1):
+
+            W = np.dot(expm(-1j*dt*Hamiltonian(n,i*dt,t_max,M)),W)  
+
+            if i == q:
+
+                
+                E_current = np.dot(W.conj().T, np.dot(H_classical,W))
+                E_res_values[t_max_index] = E_current[0,0] - E_0
+                
+                if found == False and E_res_values[t_max_index] < 0.01:
+                
+                    found = True
+
+                    index_of_zero_E_res = t_max_index
+
+                
+                    
+
+
+
+
+
+
+
+    
+
+    plt.scatter(t_max_values[index_of_zero_E_res], E_res_values[index_of_zero_E_res], color = "green", s = 10)
+    plt.plot(t_max_values, E_res_values)
+
+    plt.show()
+
+    return t_max_values[index_of_zero_E_res]
+
+
+#E_res(M,5,40,40,150)
+
+
+
+#--------------------------------------------------------
+
+# n = 5
+
+# g_v = generate_valid_adjacency_matrix(n)
+
+
+# t_to_test = E_res(g_v,n,100,30,100)
+# print(t_to_test)
+
+# plot_prob(adiabatic_prob([t_to_test], g_v, n, 100))
+
+
+#--------------------------------------------------------
 
 
 
