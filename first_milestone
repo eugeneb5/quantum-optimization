@@ -487,7 +487,7 @@ def graph_annealing_time_against_N(q,list_of_dimensions,t_max_step):
         tau_index = index
         
 
-        t_max = 0.5  #start with this for t_max?
+        t_max = 10  #start with this for t_max?
 
         success = False
 
@@ -505,16 +505,16 @@ def graph_annealing_time_against_N(q,list_of_dimensions,t_max_step):
 
             #calculate probabilty
                 norm = abs(np.vdot(W,W))  #norm should be conserved...since unitary operator?
-                prob = abs(((np.vdot(np.conjugate(W),w_0))))**2/norm 
-
-                if prob >= 0.99:
-
+                prob = abs(((np.vdot(np.conjugate(W),w_0))))**2/norm
+                #print(prob)
+                if prob >= 0.90:
+                    print("success")
                     success = True
 
                     tau[tau_index] = t_max
 
                     break
-
+            print("increase")
             t_max += t_max_step
 
     x_val = list_of_dimensions
@@ -531,18 +531,27 @@ def graph_annealing_time_against_N(q,list_of_dimensions,t_max_step):
 
 
 
-l = [3,4,5,6,7]
+#l = [3,4,5,6,7]
 
-graph_annealing_time_against_N(100,l,0.5)
-
-
+#graph_annealing_time_against_N(50,l,10)
 
 
+t_max = [1,5,50,100,1000,10000]
+
+n = 4
+
+g = generate_adjacency_matrix(n)
+
+visualize_graph(g)   
+
+plot_prob(adiabatic_prob(t_max,g,n))
+
+
+#PROBLEM!! it doesn't always work - is that since the gap gets too small - it sometimes goes to half or an incomplete probability for example... does that mean required annealing time is very long?
 
 
 
-
-
+# try create something that for a given g will calculate the energy gap - and if is above a certain annealing amount, quit the annealing
 
 
 
