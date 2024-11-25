@@ -2,8 +2,10 @@ import numpy as np
 #import sympy as sp
 from functools import reduce
 from scipy.linalg import expm
+from scipy.linalg import eigh
 
 import matplotlib.pyplot as plt
+
 
 from numpy.typing import ArrayLike
 import networkx as nx
@@ -213,12 +215,12 @@ def Hamiltonian(n,t,t_max,M):
 
     val = np.zeros((2**n,2**n))
     for i in range(1,n+1):
-        val += sigma_x(n,i)
+        val -= sigma_x(n,i)
 
     
-    final = A(t,t_max)*val - B(t,t_max)*H_ising(n,M,0.5) #kappa = 0.5
-
-    return final
+    H_t = A(t,t_max)*val + B(t,t_max)*H_ising(n,M,0.5) #kappa = 0.5
+    H_t = (H_t + H_t.T.conj()) / 2 
+    return H_t
 
 
 
@@ -336,7 +338,7 @@ def adiabatic_prob(t_max: list, M: ArrayLike, n, q=150):
 t_max = [1,2,5,10,100]
 
 
-###v = adiabatic_prob(t_max, M, 5)
+#v = adiabatic_prob(t_max, M, 5)
 
 #print(v)
 
@@ -538,13 +540,13 @@ def graph_annealing_time_against_N(q,list_of_dimensions,t_max_step):
 
 t_max = [1,5,50,100,1000,10000]
 
-n = 4
+#n = 4
 
-g = generate_adjacency_matrix(n)
+#g = generate_adjacency_matrix(n)
 
-visualize_graph(g)   
+#visualize_graph(g)   
 
-plot_prob(adiabatic_prob(t_max,g,n))
+#plot_prob(adiabatic_prob(t_max,g,n))
 
 
 #PROBLEM!! it doesn't always work - is that since the gap gets too small - it sometimes goes to half or an incomplete probability for example... does that mean required annealing time is very long?
@@ -552,6 +554,77 @@ plot_prob(adiabatic_prob(t_max,g,n))
 
 
 # try create something that for a given g will calculate the energy gap - and if is above a certain annealing amount, quit the annealing
+
+
+def eigenvalue_graph(M,t_max,q,n):
+
+    dt = t_max/q
+
+    eigenvalues_set = np.zeros((q+1, 2))
+
+    #---------------------------
+
+    H_0 = H_ising(n,M,0.5)
+
+    actual_eigenvalue_ground = np.min(H_0)
+
+    #----------------------------
+
+
+
+    for i in range(0,q+1):
+
+        h = Hamiltonian(n, i*dt, t_max, M)
+
+        eigenvalues, eigenfunctions = eigh(h)
+
+        eigenvalues = np.sort(eigenvalues)
+        
+        eigenvalues_set[i,0] = eigenvalues[0]
+
+        eigenvalues_set[i,1] = eigenvalues[1]
+
+        if i ==q:                   #DEBUGGING
+            if np.allclose(H_0, h): 
+
+                print("True")
+            else:
+                print("not right")
+                print(np.min(h))
+                print(i*dt/t_max)
+                print(h)
+
+    x_val = np.linspace(0,1,q+1)
+
+    eigenvalue_difference = eigenvalues_set[:,1]-eigenvalues_set[:,0]
+
+    eigenvalue_difference = eigenvalue_difference**-2
+
+    
+    #plt.plot(x_val, eigenvalue_difference, linestyle = "--")
+    plt.plot(x_val,eigenvalues_set[:,0], label= "ground state energy")
+    plt.plot(x_val, eigenvalues_set[:,1], label = "first excited state energy")
+    plt.scatter(x_val[-1], actual_eigenvalue_ground, label = "true ground state eigenvalue", s = 10, color = 'red')
+    plt.legend()
+    plt.show()
+    print(eigenvalue_difference[-1])
+
+
+
+#--------------------TEST EXAMPLE
+
+n = 7
+
+g = generate_adjacency_matrix(n)
+
+visualize_graph(g)   
+
+eigenvalue_graph(g,1000,150,n)
+
+plot_prob(adiabatic_prob([1000],g,n,500))
+
+
+
 
 
 
