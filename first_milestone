@@ -371,7 +371,7 @@ def plot_prob(vals):
 #plot_prob(v)
 
 
-def plot_wavefunction_evolution(vals):
+def plot_wavefunction_evolution(vals):   #delete this??! 
 
     iterations = len(vals)
 
@@ -531,7 +531,7 @@ def graph_annealing_time_against_N(q,list_of_dimensions,t_max_step):
 
 
 
-
+##----------------------------------------------------
 
 #l = [3,4,5,6,7]
 
@@ -547,6 +547,9 @@ t_max = [1,5,50,100,1000,10000]
 #visualize_graph(g)   
 
 #plot_prob(adiabatic_prob(t_max,g,n))
+
+
+#-----------------------------------------------------------
 
 
 #PROBLEM!! it doesn't always work - is that since the gap gets too small - it sometimes goes to half or an incomplete probability for example... does that mean required annealing time is very long?
@@ -611,17 +614,105 @@ def eigenvalue_graph(M,t_max,q,n):
 
 
 
-#--------------------TEST EXAMPLE
+# --------------------TEST EXAMPLE
+
+# n = 7
+
+# g = generate_adjacency_matrix(n)
+
+# visualize_graph(g)   
+
+# eigenvalue_graph(g,1000,150,n)
+
+# plot_prob(adiabatic_prob([1000],g,n,500))
+
+#------------------------------------
+
+
+
+
+# NOW we want to make this appropriate for the
+
+
+
+def eigenvalue_diff_check(M,t_max,q,n):   #returns True if is valid; False otherwise
+
+
+
+    dt = t_max/q
+
+    eigenvalues_set = np.zeros((q+1, 2))
+
+
+    for i in range(0,q+1):
+
+        h = Hamiltonian(n, i*dt, t_max, M)
+
+        eigenvalues, eigenfunctions = eigh(h)
+
+        eigenvalues = np.sort(eigenvalues)
+        
+        eigenvalues_set[i,0] = eigenvalues[0]
+
+        eigenvalues_set[i,1] = eigenvalues[1]
+    
+
+    eigenvalue_difference = eigenvalues_set[:,1]-eigenvalues_set[:,0]
+
+    if np.all(eigenvalue_difference > 0):
+
+        return True
+    else:
+        return False
+    
+
+
+def generate_valid_adjacency_matrix(n):
+
+    valid_adjacency_matrix = False
+
+    #use rough parameters, should work for all
+
+    t_max = 500
+
+    q = 150
+
+    
+
+    while valid_adjacency_matrix == False:
+
+        generated_matrix = generate_adjacency_matrix(n)
+
+        if eigenvalue_diff_check(generated_matrix, t_max, q , n) == True:
+
+            valid_adjacency_matrix = True
+
+    
+    return generated_matrix
+
 
 n = 7
 
-g = generate_adjacency_matrix(n)
+g_v = generate_valid_adjacency_matrix(n)
 
-visualize_graph(g)   
+visualize_graph(g_v)
 
-eigenvalue_graph(g,1000,150,n)
+eigenvalue_graph(g_v, 500, 150, n)
 
-plot_prob(adiabatic_prob([1000],g,n,500))
+plot_prob(adiabatic_prob([1,10,100,1000],g_v,n,500))
+
+
+
+
+
+            
+
+
+
+        
+
+    
+
 
 
 
