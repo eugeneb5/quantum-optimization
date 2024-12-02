@@ -14,7 +14,6 @@ from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes, mark_inset
 
 from collections import Counter
 
-import timeit
 
 
 
@@ -101,13 +100,6 @@ def Ising_search(H):
             val_dict['index'] = i
 
     return val_dict['index']
-
-
-
-        
-
-
-
 
 
 
@@ -1024,104 +1016,76 @@ def degenerate_eigenvalue_graph(M,t_max,q,n):
 
 
 
-###TESTING TIME FOR PROGRAM
 
 
-def program_to_test(t_max, M: ArrayLike, n, q=150):
+
 
     
 
-    w_0 = ground_wf(n,M)
-    
-        
-    prob = 0
-       
-
-    W = init_psi(n)
+def degenerate_graph_check(M,t_max,q,n,stop_value):
 
     dt = t_max/q
 
-    for i in range(0,q+1):   #we have -1 to include 0 in range #original range(q,-1,-1)
+    eigenvalues_set = np.zeros((q+1, 4))
+
+    #---------------------------
+
+    H_0 = H_ising(n,M,0.5)
+
+    actual_eigenvalue_ground = np.min(H_0)
+
+    #----------------------------
 
 
-            
-        W = np.dot(expm(-1j*dt*Hamiltonian(n,i*dt,t_max,M)),W)  #is this matrix multiplication?
 
-            #calculate probabilty
+    for i in range(0,q+1):
+
+        h = Hamiltonian(n, i*dt, t_max, M)
+
+        eigenvalues, eigenfunctions = eigh(h)
+
+        eigenvalues = np.sort(eigenvalues)
         
-        if i == q:
+        eigenvalues_set[i,0] = eigenvalues[0]
 
+        eigenvalues_set[i,1] = eigenvalues[1]
 
-            norm = abs(np.vdot(W,W))  #norm should be conserved...since unitary operator?
+        eigenvalues_set[i,2] = eigenvalues[2]  #for second
+        eigenvalues_set[i,3] = eigenvalues[3]   #for third excited energy state, for the example which is three fold degenerate is necessary!!
 
-            
+        if i ==q:                   #DEBUGGING
+            if np.allclose(H_0, h): 
 
-            prob = abs(((np.vdot(np.conjugate(W),w_0))))**2/norm  #this should be correct...
+                print("True")
+            else:
+                print("not right")
+                print(np.min(h))
+                print(i*dt/t_max)
+                print(h)
 
-            
-        if np.isnan(W).any():
-                print("values too large, stopped at index: "+str(i))
-                break
-    return prob
+    x_val = np.linspace(0,1,q+1)
 
+    eigenvalue_difference = eigenvalues_set[:,1]-eigenvalues_set[:,0]
 
+    eigenvalue_difference = eigenvalue_difference**-2
 
-print("the value for prob is "+ str(program_to_test(26,M,n)))
-
-
-code_to_time = """
-
-def program_to_test(t_max, M, n, q=150):
+    plt.plot(x_val[:stop_value], eigenvalues_set[:stop_value,1])
+    plt.plot(x_val[:stop_value], eigenvalues_set[:stop_value,2])
+    plt.plot(x_val[:stop_value], eigenvalues_set[:stop_value,3])
 
     
+    plt.plot()
 
-    w_0 = ground_wf(n,M)
+
     
-        
-    prob = 0
-       
-
-    W = init_psi(n)
-
-    dt = t_max/q
-
-    for i in range(0,q+1):   #we have -1 to include 0 in range #original range(q,-1,-1)
-
-
-            
-        W = np.dot(expm(-1j*dt*Hamiltonian(n,i*dt,t_max,M)),W)  #is this matrix multiplication?
-
-            #calculate probabilty
-        
-        if i == q:
-
-
-            norm = abs(np.vdot(W,W))  #norm should be conserved...since unitary operator?
-
-            
-
-            prob = abs(((np.vdot(np.conjugate(W),w_0))))**2/norm  #this should be correct...
-
-            
-        
-    return prob
-
-program_to_test(26,M,n)
-
-
-"""
-execution_time = timeit.timeit(code_to_time, number=5)
-print(execution_time)
+    plt.show()
 
 
 
+#degenerate_graph_check(g,100,150,n,10)  
 
 
-
-
-
-
-
+####shows they start at the same value!!!!
 
 
 
