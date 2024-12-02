@@ -10,6 +10,12 @@ import matplotlib.pyplot as plt
 from numpy.typing import ArrayLike
 import networkx as nx
 
+from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes, mark_inset
+
+from collections import Counter
+
+import timeit
+
 
 
 
@@ -245,24 +251,27 @@ def adiabatic_evol(t_max, M, n, q=200):  #assume for now k and q are the same as
             break
     return vals
 
+def sigma_x_j(n):
+    val = np.zeros((2**n,2**n))
+    for i in range(1,n+1):
+        val -= sigma_x(n,i)
+
+    return val
 
 
-#compare to get probabilities:
-# just for specific case of n=5:
+###--------------------------------------degeneracy check of sigma_x sum
 
-#f = adiabatic_evol(1, M, 5)  #is this state normalised?? we can check
+# s = sigma_x_j(5)
 
-#print(f)
-#print(f.shape)
-#print(init_psi(5).shape)
-#print(init_psi(5))
+# eigenvalues, _ = np.linalg.eig(s)
 
-#c = np.linalg.norm(f)
+# rounded_eigenvalues = np.round(eigenvalues, decimals=6)
 
-#normalised_f = (1/c)*f
+# degeneracy_dict = Counter(rounded_eigenvalues)
 
-#print(np.linalg.norm(normalised_f))
+# print(degeneracy_dict)
 
+####--------------------------------------------
 
 #build a program to write probabilties 
 
@@ -346,24 +355,38 @@ t_max = [1,2,5,10,100]
 #print(len(v[0]))   #for given example, is 3 x 1001  3 rows, 1001 columns for q =1000
 
 
-def plot_prob(vals):
+def plot_prob(vals_1, vals_2, t_max, numbers):   #vals_1 and vals_2 have to be the same size , THIS IS NOT A GENERAL PLOT FUNCTION!!
 
-    rows = len(vals)
+    rows_1 = len(vals_1)
+    rows_2 = len(vals_2)
 
-    x = np.linspace(0,1,len(vals[0]))
+    x_1 = np.linspace(0,1,len(vals_1[0]))
+    x_2 = np.linspace(0,1,len(vals_2[0]))
 
 
-    for j in vals:
+    for j_index, j in enumerate(vals_1): #assume its the same in t_max
 
-        for i in range(rows):
+        
 
-            v = vals[i]
+        
+
+        tau = t_max[j_index]
        
-            plt.plot(x,v)
+        plt.plot(x_1,j, label = f" $\\tau = {tau}$")
 
+    
+    for k_index, k in enumerate(vals_2):
+
+        tau = numbers[k_index]
+        plt.plot(x_2,k, label = f"$\\tau = {tau}$", linestyle = "--") 
+
+
+        
     plt.ylabel("Success Probability")
 
-    plt.xlabel("1/t_max")
+    plt.xlabel(r"$(t/\tau)$")
+
+    plt.legend()
 
     plt.show()
 
@@ -454,15 +477,15 @@ def verify_min_value_H(H_ising):  #this function returns a tuple!!
 
 #test generate and visualize the graph!!
 
-#n = 6
+# n = 6
 
-#g = generate_adjacency_matrix(n)
+# g = generate_adjacency_matrix(n)
 
-##visualize_graph(g)
+# #visualize_graph(g)
 
-#H = H_ising(n,g,0.5)
+# H = H_ising(n,g,0.5)
 
-#print(verify_min_value_H(H))   H is always diagonal!
+# print(verify_min_value_H(H))   H is always diagonal!
 
 #------------------------------------------
 
@@ -538,15 +561,16 @@ def graph_annealing_time_against_N(q,list_of_dimensions,t_max_step):
 #graph_annealing_time_against_N(50,l,10)
 
 
-t_max = [1,5,50,100,1000,10000]
+# t_max = [1,5,100]
 
-#n = 4
+# n = 5
 
 #g = generate_adjacency_matrix(n)
 
+
 #visualize_graph(g)   
 
-#plot_prob(adiabatic_prob(t_max,g,n))
+#plot_prob(adiabatic_prob(t_max,M,n),adiabatic_prob([100],g,n))
 
 
 #-----------------------------------------------------------
@@ -563,7 +587,7 @@ def eigenvalue_graph(M,t_max,q,n):
 
     dt = t_max/q
 
-    eigenvalues_set = np.zeros((q+1, 2))
+    eigenvalues_set = np.zeros((q+1, 4))
 
     #---------------------------
 
@@ -587,6 +611,9 @@ def eigenvalue_graph(M,t_max,q,n):
 
         eigenvalues_set[i,1] = eigenvalues[1]
 
+        eigenvalues_set[i,2] = eigenvalues[2]  #for second
+        eigenvalues_set[i,3] = eigenvalues[3]   #for third excited energy state, for the example which is three fold degenerate is necessary!!
+
         if i ==q:                   #DEBUGGING
             if np.allclose(H_0, h): 
 
@@ -607,6 +634,8 @@ def eigenvalue_graph(M,t_max,q,n):
     #plt.plot(x_val, eigenvalue_difference, linestyle = "--")
     plt.plot(x_val,eigenvalues_set[:,0], label= "ground state energy")
     plt.plot(x_val, eigenvalues_set[:,1], label = "first excited state energy")
+    plt.plot(x_val,eigenvalues_set[:,2], label= "second excited state energy")
+    plt.plot(x_val, eigenvalues_set[:,3], label = "third excited state energy")
     plt.scatter(x_val[-1], actual_eigenvalue_ground, label = "true ground state eigenvalue", s = 10, color = 'red')
     plt.legend()
     plt.show()
@@ -616,7 +645,7 @@ def eigenvalue_graph(M,t_max,q,n):
 
 # --------------------TEST EXAMPLE
 
-# n = 7
+# n = 6
 
 # g = generate_adjacency_matrix(n)
 
@@ -693,7 +722,7 @@ def generate_valid_adjacency_matrix(n):
 
 #-------------------------------TEST
 
-# n = 7
+# n = 5
 
 # g_v = generate_valid_adjacency_matrix(n)
 
@@ -701,7 +730,7 @@ def generate_valid_adjacency_matrix(n):
 
 # eigenvalue_graph(g_v, 500, 150, n)
 
-# plot_prob(adiabatic_prob([1,10,100,1000],g_v,n,500))
+# plot_prob(adiabatic_prob([1,10,100],g_v,n,500))
 
 #---------------------------------------
 
@@ -739,7 +768,7 @@ def E_res(M,n, T_range,T_num,q):
 
     #T_num = int(T_range/T_step)
 
-    t_max_values = np.linspace(1,T_range,num = T_num)
+    t_max_values = np.linspace(1,T_range,num = T_num, dtype = int)
 
     E_res_values = np.zeros(T_num)
 
@@ -788,10 +817,10 @@ def E_res(M,n, T_range,T_num,q):
 
     
 
-    plt.scatter(t_max_values[index_of_zero_E_res], E_res_values[index_of_zero_E_res], color = "green", s = 10)
-    plt.plot(t_max_values, E_res_values)
+    #plt.scatter(t_max_values[index_of_zero_E_res], E_res_values[index_of_zero_E_res], color = "green", s = 10)
+    #plt.plot(t_max_values, E_res_values)
 
-    plt.show()
+    #plt.show()
 
     return t_max_values[index_of_zero_E_res]
 
@@ -806,6 +835,8 @@ def E_res(M,n, T_range,T_num,q):
 
 # g_v = generate_valid_adjacency_matrix(n)
 
+# eigenvalue_graph(g_v, 1000,150,n)
+
 
 # t_to_test = E_res(g_v,n,100,30,100)
 # print(t_to_test)
@@ -817,10 +848,55 @@ def E_res(M,n, T_range,T_num,q):
 
 
 
+def plot_n_and_Tmax(n_initial, n_final, repeats):
+
+    n_num = n_final - n_initial +1
+
+    n_array = np.linspace(n_initial, n_final, endpoint=True, num = n_num, dtype=int)
+
+    t_vals = np.zeros((n_num, repeats))
+    n_vals = np.zeros((n_num, repeats))
+
+
+    for n_index, n in enumerate(n_array):
+
+        for i in range(repeats):
+
+            g_v = generate_valid_adjacency_matrix(n)
+
+            t_value = E_res(g_v, n, 100, 30, 100)   #might need to fidget around with this... make more precise!!
+
+            t_vals[n_index, i] = t_value
+
+            n_vals[n_index, i] = n
+
+
+    for i, subarray in enumerate(t_vals):
+
+        plt.scatter(n_vals[i], subarray)
+
+    plt.show()
+
+
+
+#plot_n_and_Tmax(3,5,5)
 
 
 
 
+
+
+
+#----------------------------------
+
+g = np.array([[0,1,1,1,1],[0,0,1,1,0],[0,0,0,0,0,],[0,0,0,0,1],[0,0,0,0,0]])  #this matrix should have degenerate ground state eigenvalues
+
+n = 5
+
+#eigenvalue_graph(g,1000,100,n)
+
+
+####### g is threefold degenerate in the ground state - so expect three similar values 
 
 
 
@@ -828,7 +904,214 @@ def E_res(M,n, T_range,T_num,q):
     
 
 
+def check_degeneracy(M, n):
 
+    h = H_ising(n,M,0.5)
+
+    min_val = np.min(h)
+
+    count = np.sum(h == min_val)
+
+    if count > 0:
+        print("is degenerate")
+        
+    else:
+        print("not degenerate")
+    return count
+
+
+
+
+def degenerate_eigenvalue_graph(M,t_max,q,n):
+
+    dt = t_max/q
+
+    eigenvalues_set = np.zeros((q+1, 4))
+
+    #---------------------------
+
+    H_0 = H_ising(n,M,0.5)
+
+    actual_eigenvalue_ground = np.min(H_0)
+
+    #----------------------------
+
+
+
+    for i in range(0,q+1):
+
+        h = Hamiltonian(n, i*dt, t_max, M)
+
+        eigenvalues, eigenfunctions = eigh(h)
+
+        eigenvalues = np.sort(eigenvalues)
+        
+        eigenvalues_set[i,0] = eigenvalues[0]
+
+        eigenvalues_set[i,1] = eigenvalues[1]
+
+        eigenvalues_set[i,2] = eigenvalues[2]  #for second
+        eigenvalues_set[i,3] = eigenvalues[3]   #for third excited energy state, for the example which is three fold degenerate is necessary!!
+
+        if i ==q:                   #DEBUGGING
+            if np.allclose(H_0, h): 
+
+                print("True")
+            else:
+                print("not right")
+                print(np.min(h))
+                print(i*dt/t_max)
+                print(h)
+
+    x_val = np.linspace(0,1,q+1)
+
+    eigenvalue_difference = eigenvalues_set[:,1]-eigenvalues_set[:,0]
+
+    eigenvalue_difference = eigenvalue_difference**-2
+
+    
+    
+
+
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.plot(x_val, eigenvalues_set[:,0], label="ground state energy", color = "grey")
+    ax.plot(x_val, eigenvalues_set[:,1], label="first excited state energy", color = "red")
+    ax.plot(x_val, eigenvalues_set[:,2], label="second excited state energy", color = "green")
+    ax.plot(x_val, eigenvalues_set[:,3], label="third excited state energy", color = "blue")
+    ax.scatter(x_val[-1], actual_eigenvalue_ground, label = "true ground state energy", s = 10, color = 'black')
+    #ax.scatter()
+    ax.set_xlabel(r"$(t/\tau)$")
+    ax.set_ylabel("Eigenvalue")
+    ax.legend(loc = "lower left")
+
+
+    axins = zoomed_inset_axes(ax, zoom=15, loc="upper right")
+    axins.plot(x_val , eigenvalues_set[:,1], label="first excited state energy", color = "red")
+    axins.plot(x_val, eigenvalues_set[:,2], label="second excited state energy", color = "green")
+    axins.plot(x_val, eigenvalues_set[:,3], label="third excited state energy", color = "blue")
+
+    axins.set_xlim(0, 0.02)
+    axins.set_ylim(-3.0,-2.95)
+
+    axins.tick_params(axis="both", which="both", labelsize=6)
+
+    axins.set_xticks([0,0.01,0.02])
+    axins.set_yticks([-3.0,-2.975])
+
+    
+
+    mark_inset(ax, axins, loc1=2, loc2=4, fc="none", ec="0.5", ls = "--")
+
+    plt.tight_layout()
+    plt.show()
+
+
+
+###--------------------GRAPHS
+
+#print(E_res(M,n,50,50,200))
+
+# t_max = [1,5,26]
+
+# number = [1,500,10000]
+# plot_prob(adiabatic_prob(t_max,M,n),adiabatic_prob(number,g,n), t_max, number)
+
+
+#degenerate_eigenvalue_graph(g,1000,100,n)  
+
+###---------------------------
+
+
+
+###TESTING TIME FOR PROGRAM
+
+
+def program_to_test(t_max, M: ArrayLike, n, q=150):
+
+    
+
+    w_0 = ground_wf(n,M)
+    
+        
+    prob = 0
+       
+
+    W = init_psi(n)
+
+    dt = t_max/q
+
+    for i in range(0,q+1):   #we have -1 to include 0 in range #original range(q,-1,-1)
+
+
+            
+        W = np.dot(expm(-1j*dt*Hamiltonian(n,i*dt,t_max,M)),W)  #is this matrix multiplication?
+
+            #calculate probabilty
+        
+        if i == q:
+
+
+            norm = abs(np.vdot(W,W))  #norm should be conserved...since unitary operator?
+
+            
+
+            prob = abs(((np.vdot(np.conjugate(W),w_0))))**2/norm  #this should be correct...
+
+            
+        if np.isnan(W).any():
+                print("values too large, stopped at index: "+str(i))
+                break
+    return prob
+
+
+
+print("the value for prob is "+ str(program_to_test(26,M,n)))
+
+
+code_to_time = """
+
+def program_to_test(t_max, M, n, q=150):
+
+    
+
+    w_0 = ground_wf(n,M)
+    
+        
+    prob = 0
+       
+
+    W = init_psi(n)
+
+    dt = t_max/q
+
+    for i in range(0,q+1):   #we have -1 to include 0 in range #original range(q,-1,-1)
+
+
+            
+        W = np.dot(expm(-1j*dt*Hamiltonian(n,i*dt,t_max,M)),W)  #is this matrix multiplication?
+
+            #calculate probabilty
+        
+        if i == q:
+
+
+            norm = abs(np.vdot(W,W))  #norm should be conserved...since unitary operator?
+
+            
+
+            prob = abs(((np.vdot(np.conjugate(W),w_0))))**2/norm  #this should be correct...
+
+            
+        
+    return prob
+
+program_to_test(26,M,n)
+
+
+"""
+execution_time = timeit.timeit(code_to_time, number=5)
+print(execution_time)
 
 
 
