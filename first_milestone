@@ -374,11 +374,14 @@ def plot_prob(vals_1, vals_2, t_max, numbers):   #vals_1 and vals_2 have to be t
 
 
         
-    plt.ylabel("Success Probability")
+    plt.ylabel("Success Probability", fontsize = 20)
 
-    plt.xlabel(r"$(t/\tau)$")
+    plt.xlabel(r"$(t/\tau)$", fontsize = 15)
 
-    plt.legend()
+    plt.legend(fontsize = 15)
+
+    plt.yticks(fontsize = 15)
+    plt.xticks(fontsize = 15)
 
     plt.show()
 
@@ -973,9 +976,11 @@ def degenerate_eigenvalue_graph(M,t_max,q,n):
     ax.plot(x_val, eigenvalues_set[:,3], label="third excited state energy", color = "blue")
     ax.scatter(x_val[-1], actual_eigenvalue_ground, label = "true ground state energy", s = 10, color = 'black')
     #ax.scatter()
-    ax.set_xlabel(r"$(t/\tau)$")
-    ax.set_ylabel("Eigenvalue")
-    ax.legend(loc = "lower left")
+    ax.set_xlabel(r"$(t/\tau)$", fontsize = 13)
+    ax.set_ylabel("Eigenvalue", fontsize = 20)
+    ax.legend(loc = "lower left", fontsize = 12)
+    ax.tick_params(axis="x", labelsize=14)  
+    ax.tick_params(axis="y", labelsize=14)
 
 
     axins = zoomed_inset_axes(ax, zoom=15, loc="upper right")
@@ -1004,13 +1009,13 @@ def degenerate_eigenvalue_graph(M,t_max,q,n):
 
 #print(E_res(M,n,50,50,200))
 
-# t_max = [1,5,26]
+#t_max = [1,5,26]
 
-# number = [1,500,10000]
-# plot_prob(adiabatic_prob(t_max,M,n),adiabatic_prob(number,g,n), t_max, number)
+#number = [1,50,1000]
+#plot_prob(adiabatic_prob(t_max,M,n),adiabatic_prob(number,g,n), t_max, number)
 
 
-#degenerate_eigenvalue_graph(g,1000,100,n)  
+degenerate_eigenvalue_graph(g,1000,100,n)  
 
 ###---------------------------
 
