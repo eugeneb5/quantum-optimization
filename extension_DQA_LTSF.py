@@ -128,7 +128,8 @@ def b_coefficients_false(t,t_max,s_x):
 
 #need to define the Coupling matrix J, do random generation later:
 
-J = np.array([[0,1,1,0,0],[0,0,1,0,1],[0,0,0,1,1],[0,0,0,0,0],[0,0,0,0,0]])
+J = -0.5*np.array([[0,1,1,0,0],[0,0,1,0,1],[0,0,0,1,1],[0,0,0,0,0],[0,0,0,0,0]])
+
 
 
 
@@ -170,13 +171,19 @@ def problem_hamiltonian(t,t_max,target_qubit,n,J,s_x=0.2):
 
         for j in range(k+1,n+1):
 
-            if condition == True:
+            if condition == True or j == target_qubit:   #loops have been designed such that there will be no overlap between these conditions!! 
 
                 final_h += b_coefficients_true(t,t_max,s_x)*J[k-1,j-1]*(sigma_z(n,k)@sigma_z(n,j))
 
+            else:
 
+                final_h += b_coefficients_false(t,t_max,s_x)*J[k-1,j-1]*(sigma_z(n,k)@sigma_z(n,j))
 
-        condition = False
+        condition = False #resets condition!
+
+    return final_h
+
+    
 
             
 

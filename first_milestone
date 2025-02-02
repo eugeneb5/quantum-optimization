@@ -129,7 +129,7 @@ H = H_ising(5,M,0.5)
 
 #figure out how wavefunction evolves in time too
 
-def init_psi(n):
+def init_psi(n):    #start with this wavefunction in the evolution!
 
     up_state = (1/(2)**0.5)*np.array([[1],[1]])
 
@@ -267,7 +267,7 @@ def sigma_x_j(n):
 
 #build a program to write probabilties 
 
-def ground_wf(n,M: ArrayLike):  #is set to be a covector!
+def ground_wf(n,M: ArrayLike):  #is set to be a covector!  #one to be compared to!!
 
     H = H_ising(n,M,0.5) #kappa set to 0.5
 
