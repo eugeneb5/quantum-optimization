@@ -133,7 +133,7 @@ J = -0.5*np.array([[0,1,1,0,0],[0,0,1,0,1],[0,0,0,1,1],[0,0,0,0,0],[0,0,0,0,0]])
 
 
 
-
+# define hamiltonian
 
 def driver_hamiltonian(t,t_max, n,target_qubit,s_x = 0.2, R = 1):  #is only for a splice in time!! would need to update the hamiltonian each time...
 
@@ -152,7 +152,7 @@ def problem_hamiltonian(t,t_max,target_qubit,n,J,s_x=0.2):
 
     final_h = np.zeros((2**n,2**n))
 
-    h_z = h_z(J,n)
+    h = h_z(J,n)
 
     condition = False
 
@@ -160,9 +160,9 @@ def problem_hamiltonian(t,t_max,target_qubit,n,J,s_x=0.2):
     for i in range(1,n+1):
 
         if target_qubit == i:
-            final_h += b_coefficients_true(t,t_max,s_x)*h_z[i-1]*sigma_z(n,i)
+            final_h += b_coefficients_true(t,t_max,s_x)*h[i-1]*sigma_z(n,i)
         else:
-            final_h += b_coefficients_false(t,t_max,s_x)*h_z[i-1]*sigma_z(n,i)
+            final_h += b_coefficients_false(t,t_max,s_x)*h[i-1]*sigma_z(n,i)
 
     for k in range(1,n+1):
 
@@ -183,25 +183,59 @@ def problem_hamiltonian(t,t_max,target_qubit,n,J,s_x=0.2):
 
     return final_h
 
+
+
+
+# for the evolution 
+            
+def init_psi(n):    #start with this wavefunction in the evolution!
+
+    up_state = (1/(2)**0.5)*np.array([[1],[1]])
+
+    initial = up_state
+    for i in range(n-1):  #n-1 since 1 counts as its self...
+        initial = np.kron(initial,up_state)
     
-
-            
-
-
-
-        
-
-            
+    return initial
 
 
 
 
 
+#check initial eigenvector!
+
+#check for t = 0:
+t_max = 10
+target_qubit = 1
+
+n=5
+initial_p_h = problem_hamiltonian(0,t_max,target_qubit,n,J)
+
+initial_d_h = driver_hamiltonian(0,t_max,n,target_qubit)
+
+initial_hamiltonian = initial_d_h+initial_p_h
+
+#print(initial_d_h+initial_p_h)
+
+
+def eigenvector_check(A,v,tol = 1e-6):
+
+
+
+    Av = A@v
+
+    ratios = Av/v
+
+    if np.allclose(ratios, ratios[0], atol=tol, rtol=tol):
+        return True, ratios[0]  # The first ratio is the eigenvalue (λ)
+    return False, ratios
+
+
+inital_state = init_psi(n)
+
+print(eigenvector_check(initial_hamiltonian,inital_state))
 
 
 
 
 
-
-
-#add a scaling in the hamiltonian?? e.g. to do ns time?
