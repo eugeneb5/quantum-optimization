@@ -239,8 +239,34 @@ def eigenvector_check(A,v,tol = 1e-6):
 
 # find initial eigenvector then ----------------------------------------------
 
-num_states = 5
+num_states = 2
 
-eigenvalues, eigenvectors = eigsh(initial_hamiltonian, k=num_states, which='SA')  #SA for smallest eigenvalues
+def is_hermitian(H, tol=1e-10):
+    return np.allclose(H, H.conj().T, atol=tol)
 
-print(eigenvalues, eigenvectors)
+#print(is_hermitian(initial_hamiltonian)) # it is hermitian!!
+#eigenvalues, eigenvectors = eigsh(initial_hamiltonian, k=num_states, which='SA')  #SA for smallest eigenvalues; use this for larger matrices, is approximate
+
+eigenvalues, eigenvectors = eigh(initial_hamiltonian) #this method is exact, diagonalization!
+print(np.min(eigenvalues))
+
+
+first_eigenvector = eigenvectors[:,0]
+second_eigenvector = eigenvectors[:,1]
+
+print(first_eigenvector) # try with only one eigenvector at first..
+
+
+
+
+
+
+### initialize the evolution....
+
+
+def diabatic_evolution_probability_plot(initial_eigenvector,t_max, M, n, q=200):
+
+    initial_state = initial_eigenvector
+
+    
+
