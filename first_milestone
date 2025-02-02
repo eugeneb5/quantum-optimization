@@ -435,7 +435,7 @@ def generate_adjacency_matrix(n):
 
 def visualize_graph(adj_matrix):
 
-    graph = nx.from_numpy_matrix(adj_matrix)
+    graph = nx.from_numpy_array(adj_matrix)
 
     plt.figure(figsize=(8, 8))  # Set the figure size
     nx.draw(
@@ -640,13 +640,13 @@ def eigenvalue_graph(M,t_max,q,n):
 
 # --------------------TEST EXAMPLE
 
-# n = 6
+n = 6
 
-# g = generate_adjacency_matrix(n)
+g = generate_adjacency_matrix(n)
 
-# visualize_graph(g)   
+visualize_graph(g)   
 
-# eigenvalue_graph(g,1000,150,n)
+eigenvalue_graph(g,1000,150,n)
 
 # plot_prob(adiabatic_prob([1000],g,n,500))
 

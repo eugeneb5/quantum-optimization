@@ -69,11 +69,11 @@ def a_coefficients_false(t,t_max,s_x):
 
     
     s = t/t_max
-
+    
     if s < s_x:
         return 1
     else:
-        1 - ((s-s_x)/(1-s_x))
+        return 1 - ((s-s_x)/(1-s_x))
 
 def a_coefficients_true(t,t_max,s_x):    #ALTER LATER! to test how it works!!
 
@@ -125,7 +125,7 @@ def b_coefficients_false(t,t_max,s_x):
     else:
         return (s-s_x)/(1-s_x)
 
-
+#def gaussian_h_z(n,R=1):
 
 #need to define the Coupling matrix J, do random generation later:
 
@@ -136,7 +136,7 @@ J = -0.5*np.array([[0,1,1,0,0],[0,0,1,0,1],[0,0,0,1,1],[0,0,0,0,0],[0,0,0,0,0]])
 
 # define hamiltonian
 
-def driver_hamiltonian(t,t_max, n,target_qubit,s_x = 0.2, R = 1):  #is only for a splice in time!! would need to update the hamiltonian each time...
+def driver_hamiltonian(t,t_max, target_qubit,n,s_x=0.8, R = 1):  #is only for a splice in time!! would need to update the hamiltonian each time...
 
     #n for dimension or number of vertices!
     #give target_qubit as a number between 0 to n
@@ -149,7 +149,7 @@ def driver_hamiltonian(t,t_max, n,target_qubit,s_x = 0.2, R = 1):  #is only for 
             final_h += a_coefficients_false(t,t_max,s_x)*R*sigma_x(n,i)
     return final_h
 
-def problem_hamiltonian(t,t_max,target_qubit,n,J,s_x=0.2):
+def problem_hamiltonian(t,t_max,target_qubit,n,J,s_x=0.8):
 
     final_h = np.zeros((2**n,2**n))
 
@@ -189,7 +189,7 @@ def problem_hamiltonian(t,t_max,target_qubit,n,J,s_x=0.2):
 
 # for the evolution 
             
-def init_psi(n):    #start with this wavefunction in the evolution!
+def init_psi(n):    #start with this wavefunction in the evolution! - found out is not valid!! we have a nonzero problem h term at s =0
 
     up_state = (1/(2)**0.5)*np.array([[1],[1]])
 
@@ -206,13 +206,13 @@ def init_psi(n):    #start with this wavefunction in the evolution!
 #check initial eigenvector!-------------------------------------------------------------
 
 #check for t = 0:
-t_max = 10
-target_qubit = 1
+t_max = 0.001
+target_qubit = 3
 
 n=5
 initial_p_h = problem_hamiltonian(0,t_max,target_qubit,n,J)
 
-initial_d_h = driver_hamiltonian(0,t_max,n,target_qubit)
+initial_d_h = driver_hamiltonian(0,t_max,target_qubit,n)
 
 initial_hamiltonian = initial_d_h+initial_p_h
 
@@ -248,13 +248,13 @@ def is_hermitian(H, tol=1e-10):
 #eigenvalues, eigenvectors = eigsh(initial_hamiltonian, k=num_states, which='SA')  #SA for smallest eigenvalues; use this for larger matrices, is approximate
 
 eigenvalues, eigenvectors = eigh(initial_hamiltonian) #this method is exact, diagonalization!
-print(np.min(eigenvalues))
+#print(np.min(eigenvalues))
 
 
 first_eigenvector = eigenvectors[:,0]
 second_eigenvector = eigenvectors[:,1]
 
-print(first_eigenvector) # try with only one eigenvector at first..
+#print(first_eigenvector) # try with only one eigenvector at first..
 
 
 
@@ -264,9 +264,66 @@ print(first_eigenvector) # try with only one eigenvector at first..
 ### initialize the evolution....
 
 
-def diabatic_evolution_probability_plot(initial_eigenvector,t_max, M, n, q=200):
+def diabatic_evolution_test_probability(initial_eigenvector,comparison_vector,target_qubit, t_max, J, n, q=200):   #should build in the initial_eigenvector bit later on - need to check program works first!!
 
-    initial_state = initial_eigenvector
+    state = initial_eigenvector
 
+    dt = t_max/q
+
+    values = np.zeros(q+1)
+
+    for i in range(0,q+1):
+
+        Hamiltonian_at_time_instance = problem_hamiltonian(i*dt,t_max,target_qubit,n,J)+driver_hamiltonian(i*dt,t_max,target_qubit,n)
+        
+        state = np.dot(expm(-1j*dt*Hamiltonian_at_time_instance),state)
+        
+
+        probability = abs(((np.vdot(state,comparison_vector))))**2
+       
+        values[i] = probability
+
+    return values[q] #i.e. final value
+
+
+#superficially make the expected comparison vector for this specific problem!!
+comparison_vector = np.zeros(2**n)
+comparison_vector[19] = 1
+initial_eigenvector = 2**(-0.5)*first_eigenvector+2**(-0.5)*second_eigenvector
+#print(comparison_vector)
+#print(abs(np.vdot(comparison_vector,initial_eigenvector))**2)
+#d = diabatic_evolution_test_probability(initial_eigenvector,comparison_vector,target_qubit,t_max,J,n)
+
+#print(d)
+
+
+
+
+def diabatic_test_eigenspectrum(initial_eigenvector,target_qubit,t_max,J,n,q=200):
+
+    dt = t_max/q
+
+    ground_eig = np.zeros(q+1)
+    first_eig = np.zeros(q+1)
+    second_eig = np.zeros(q+1)
     
+    for i in range(0,q+1):
 
+        Hamiltonian_at_time_instance = problem_hamiltonian(i*dt,t_max,target_qubit,n,J)+driver_hamiltonian(i*dt,t_max,target_qubit,n)
+
+        eigenvalues, eigenvectors = eigh(Hamiltonian_at_time_instance)
+
+        ground_eig[i] = eigenvalues[0]
+        first_eig[i] = eigenvalues[1]
+        second_eig[i] = eigenvalues[2]
+    print(ground_eig[q])
+    x_val = np.linspace(0,1,q+1)
+
+    plt.plot(x_val,ground_eig, label= "ground state energy")
+    plt.plot(x_val, first_eig, label = "first excited state energy")
+    plt.plot(x_val,second_eig, label= "second excited state energy")
+    plt.legend()
+    plt.show()
+        
+
+diabatic_test_eigenspectrum(initial_eigenvector,target_qubit,t_max,J,n)
