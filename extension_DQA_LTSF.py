@@ -3,6 +3,7 @@ import numpy as np
 from functools import reduce
 from scipy.linalg import expm
 from scipy.linalg import eigh
+from scipy.sparse.linalg import eigsh   #for larger matrices!
 import matplotlib.pyplot as plt
 import networkx as nx
 
@@ -202,7 +203,7 @@ def init_psi(n):    #start with this wavefunction in the evolution!
 
 
 
-#check initial eigenvector!
+#check initial eigenvector!-------------------------------------------------------------
 
 #check for t = 0:
 t_max = 10
@@ -231,11 +232,15 @@ def eigenvector_check(A,v,tol = 1e-6):
     return False, ratios
 
 
-inital_state = init_psi(n)
-
-print(eigenvector_check(initial_hamiltonian,inital_state))
-
+#inital_state = init_psi(n)
+#print(eigenvector_check(initial_hamiltonian,inital_state))
 
 
 
+# find initial eigenvector then ----------------------------------------------
 
+num_states = 5
+
+eigenvalues, eigenvectors = eigsh(initial_hamiltonian, k=num_states, which='SA')  #SA for smallest eigenvalues
+
+print(eigenvalues, eigenvectors)
