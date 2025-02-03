@@ -345,7 +345,7 @@ def diabatic_test_eigenspectrum(target_qubit,t_max,J,n,q=100):   #THIS DOESN'T W
     #plt.plot(x_val,second_eig, label= "second excited state energy")
     plt.plot(x_val, min_diff_eig_1, label = "first minimum difference")
     plt.plot(x_val, min_diff_eig_2, label = "second minimum difference")
-    plt.plot(x_val, min_diff_eig_3)
+    #plt.plot(x_val, min_diff_eig_3)
     plt.legend()
     plt.show()
 
