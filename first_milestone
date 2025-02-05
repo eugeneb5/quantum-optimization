@@ -65,6 +65,7 @@ def H_ising(n,M,kappa):
 
         h[k] = total + kappa
 
+    #h = np.array([1,-0.32610452,0.16998698,-0.12109217,-0.58725647,0.19980255,-0.4370849])
     
     #to find H_ising now
     H = np.zeros((2**n,2**n))
@@ -627,16 +628,16 @@ def eigenvalue_graph(M,t_max,q,n):
     #eigenvalue_difference = eigenvalue_difference**-2
 
     
-    plt.plot(x_val, eigenvalue_difference, linestyle = "--")
-    plt.plot(x_val, eigenvalue_diff_2)
-    # plt.plot(x_val,eigenvalues_set[:,0], label= "ground state energy")
-    # plt.plot(x_val, eigenvalues_set[:,1], label = "first excited state energy")
-    # plt.plot(x_val,eigenvalues_set[:,2], label= "second excited state energy")
-    # plt.plot(x_val, eigenvalues_set[:,3], label = "third excited state energy")
-    # plt.scatter(x_val[-1], actual_eigenvalue_ground, label = "true ground state eigenvalue", s = 10, color = 'red')
+    #plt.plot(x_val, eigenvalue_difference, linestyle = "--")
+    #plt.plot(x_val, eigenvalue_diff_2)
+    plt.plot(x_val,eigenvalues_set[:,0], label= "ground state energy")
+    plt.plot(x_val, eigenvalues_set[:,1], label = "first excited state energy")
+    plt.plot(x_val,eigenvalues_set[:,2], label= "second excited state energy")
+    plt.plot(x_val, eigenvalues_set[:,3], label = "third excited state energy")
+    plt.scatter(x_val[-1], actual_eigenvalue_ground, label = "true ground state eigenvalue", s = 10, color = 'red')
     plt.legend()
     plt.show()
-    print(eigenvalue_difference[-1])
+    #print(eigenvalue_difference[-1])
 
 
 

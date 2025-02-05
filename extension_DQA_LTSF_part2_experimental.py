@@ -125,15 +125,72 @@ def b_coefficients_false(t,t_max,s_x):
     else:
         return (s-s_x)/(1-s_x)
 
-def gaussian_h_z(n,R=1):
+def gaussian_h_z(n,R=1e9):  #maybe remake this function - need to sample from gaussian independently??
+
+    gaussian = np.zeros(n)
+    for i in range(n):
+
+        g_value = np.random.normal(loc = 0, scale = 1)
+
+        gaussian[i] = g_value
+    
 
     
 
-    gaussian_values = np.random.normal(loc = 0, scale = 1, size = n)
-
-    normalised_gaussian_values = gaussian_values*R/np.max(abs(gaussian_values))
+    normalised_gaussian_values = gaussian*R/np.max(abs(gaussian))
 
     return normalised_gaussian_values
+
+
+
+
+#from the milestone - for making comparison vector:
+
+def Classical_H_ising(n,J,h_sample):
+
+
+    #J is the adjacency matrix
+    #need to test the three modes of h
+
+    h = h_sample
+
+    
+    #to find H_ising now
+    H = np.zeros((2**n,2**n))
+    H_2 = np.zeros((2**n,2**n))
+    for k in range(1,n+1):   #1 to n
+
+
+        H_2 += h[k-1]*sigma_z(n,k)
+        
+
+        for j in range(k+1,n+1): #k+1 to n
+
+            H += (J[k-1,j-1]*sigma_z(n,k)@sigma_z(n,j)) 
+    
+    return (H+H_2)
+
+def Ising_search(H):
+
+    #min_val = float('inf') #this is positive infinity
+    
+    val_dict = {}    
+
+    val_dict['min_val']= float('inf')
+    val_dict['index'] = None             
+
+    for i in range(len(H)):  #H_ising will only have diagonal terms and be a perfect square matrix...
+
+        if H[i,i] < val_dict['min_val']:
+
+            val_dict['min_val'] = H[i,i]
+            val_dict['index'] = i
+
+    return val_dict['index']
+
+
+
+
 
 
 #need to define the Coupling matrix J, do random generation later:
@@ -141,6 +198,13 @@ def gaussian_h_z(n,R=1):
 #J = -0.5*np.array([[0,1,1,0,0],[0,0,1,0,1],[0,0,0,1,1],[0,0,0,0,0],[0,0,0,0,0]])
 
 J = -0.5*1e9*np.array([[0,0,1,1,0,1,1],[0,0,0,0,1,0,0],[0,0,0,1,1,0,1],[0,0,0,0,0,0,1],[0,0,0,0,0,1,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]])
+n = 7
+#h_sample = gaussian_h_z(n)  #need to have a method of saving it!!  write onto a txt file and save and reread it off of it!!
+h_sample = h_z(J,n)
+h = 1e9*np.array([1,-0.32610452,0.16998698,-0.12109217,-0.58725647,0.19980255,-0.4370849])
+
+
+
 
 
 
@@ -159,33 +223,34 @@ def driver_hamiltonian(t,t_max, target_qubit,n,s_x=0.2, R = 1e9):  #is only for 
             final_h += a_coefficients_false(t,t_max,s_x)*R*sigma_x(n,i)
     return final_h
 
-def problem_hamiltonian(t,t_max,target_qubit,n,J,s_x=0.2):
+def problem_hamiltonian(t,t_max,target_qubit,n,J,h_sample,s_x=0.2):
 
     final_h = np.zeros((2**n,2**n))
 
-    #h = gaussian_h_z(n)
+    h = h_sample   #needs to be the same one throughout!! that's why it didn't work before!
+    
     #h = h_z(J,n)
 
-    h = 1e9*np.array([1,-0.32610452,0.16998698,-0.12109217,-0.58725647,0.19980255,-0.4370849])
+    #h = 1e9*np.array([1,-0.32610452,0.16998698,-0.12109217,-0.58725647,0.19980255,-0.4370849])
 
-    print("check")
+    condition = False
 
     #for the first part of hamiltonian
     for i in range(1,n+1):
-        print("check loop")
+
         if target_qubit == i:
-            print("target_qubit yes")
             final_h += b_coefficients_true(t,t_max,s_x)*h[i-1]*sigma_z(n,i)
         else:
             final_h += b_coefficients_false(t,t_max,s_x)*h[i-1]*sigma_z(n,i)
-            print("NO!")
+
     for k in range(1,n+1):
 
-        
+        if k == target_qubit:
+            condition = True
 
         for j in range(k+1,n+1):
 
-            if k == target_qubit or j == target_qubit:   #loops have been designed such that there will be no overlap between these conditions!! 
+            if condition == True or j == target_qubit:   #loops have been designed such that there will be no overlap between these conditions!! 
 
                 final_h += b_coefficients_true(t,t_max,s_x)*J[k-1,j-1]*(sigma_z(n,k)@sigma_z(n,j))  #just checked - this bit isn't working!!
 
@@ -193,14 +258,14 @@ def problem_hamiltonian(t,t_max,target_qubit,n,J,s_x=0.2):
 
                 final_h += b_coefficients_false(t,t_max,s_x)*J[k-1,j-1]*(sigma_z(n,k)@sigma_z(n,j))
 
-        
+        condition = False #resets condition!
 
     return final_h
 
 
 
 
-# for the evolution 
+# for the evolution  - DEFUNCT
             
 def init_psi(n):    #start with this wavefunction in the evolution! - found out is not valid!! we have a nonzero problem h term at s =0
 
@@ -216,20 +281,20 @@ def init_psi(n):    #start with this wavefunction in the evolution! - found out 
 
 
 
-#check initial eigenvector!-------------------------------------------------------------
+#CHECK initial eigenvector!-------------------------------------------------------------
 
 #check for t = 0:
 t_max = 100e-9
 target_qubit = 1
 
 n=7
-initial_p_h = problem_hamiltonian(0,t_max,target_qubit,n,J)
+initial_p_h = problem_hamiltonian(0,t_max,target_qubit,n,J,h_sample)
 
 initial_d_h = driver_hamiltonian(0,t_max,target_qubit,n)
 
 initial_hamiltonian = initial_d_h+initial_p_h
 
-#print(initial_d_h+initial_p_h)
+
 
 
 def eigenvector_check(A,v,tol = 1e-6):
@@ -247,6 +312,11 @@ def eigenvector_check(A,v,tol = 1e-6):
 
 #inital_state = init_psi(n)
 #print(eigenvector_check(initial_hamiltonian,inital_state))
+
+
+
+
+
 
 
 
@@ -274,10 +344,87 @@ second_eigenvector = eigenvectors[:,1]
 
 
 
-### initialize the evolution....
 
 
-def diabatic_evolution_test_probability(initial_eigenvector,comparison_vector,target_qubit, t_max, J, n, q=100):   #should build in the initial_eigenvector bit later on - need to check program works first!!
+
+#find solution ------------------------------
+
+H = Classical_H_ising(n,J,h)
+
+index = Ising_search(H)
+
+print(index)
+
+#print(H)
+
+def is_it_diagonal(H):
+
+    n = len(H)
+
+    
+
+    for i in range(n):
+
+        for j in range(n):
+
+            if i != j and abs(H[i][j]) > 1e-9:
+
+                return False
+    
+    return True
+     
+#print(is_it_diagonal(H))   #so yes it is diagonal!
+                
+def print_diagonal_elements(H):
+
+    n = len(H)
+
+    for i in range(n):
+        for j in range(n):
+
+            if i ==j:
+                print(H[i][j])
+
+#print_diagonal_elements(H)
+
+def ground_wf(n,J,h):  #is set to be a covector!  #one to be compared to!!
+
+    H = Classical_H_ising(n,J,h) #kappa set to 0.5
+
+    i = Ising_search(H)
+
+    vector = np.zeros((2**n))
+
+    vector[i] = 1
+
+    return vector
+
+
+comparison_vector = ground_wf(n,J,h)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### initialize the evolution----------------------------------------
+
+
+def diabatic_evolution_test_probability(initial_eigenvector,comparison_vector,target_qubit, t_max, J, n, h_sample,q=100):   #should build in the initial_eigenvector bit later on - need to check program works first!!
 
     state = initial_eigenvector
 
@@ -286,8 +433,8 @@ def diabatic_evolution_test_probability(initial_eigenvector,comparison_vector,ta
     values = np.zeros(q+1)
 
     for i in range(0,q+1):
-        
-        Hamiltonian_at_time_instance = problem_hamiltonian(i*dt,t_max,target_qubit,n,J)+driver_hamiltonian(i*dt,t_max,target_qubit,n)
+
+        Hamiltonian_at_time_instance = problem_hamiltonian(i*dt,t_max,target_qubit,n,J,h_sample)+driver_hamiltonian(i*dt,t_max,target_qubit,n)
         
         state = np.dot(expm(-1j*dt*Hamiltonian_at_time_instance),state)
         
@@ -299,26 +446,26 @@ def diabatic_evolution_test_probability(initial_eigenvector,comparison_vector,ta
     return values[q] #i.e. final value
 
 
-#superficially make the expected comparison vector for this specific problem!!
-comparison_vector = np.zeros(2**n)
-comparison_vector[19] = 1
+
 
 
 #initial_eigenvector = 2**(-0.5)*first_eigenvector+2**(-0.5)*second_eigenvector
 initial_eigenvector = first_eigenvector
-#print(comparison_vector)
-#print(abs(np.vdot(comparison_vector,initial_eigenvector))**2)
-#d = diabatic_evolution_test_probability(initial_eigenvector,comparison_vector,target_qubit,t_max,J,n)
-
-#print(d)
+#initial_eigenvector = second_eigenvector
 
 
 
+d = diabatic_evolution_test_probability(initial_eigenvector,comparison_vector,target_qubit,t_max,J,n,h)
 
-def diabatic_test_eigenspectrum(target_qubit,t_max,J,n,q=100):   
+print("for target qubit set to "+ str(target_qubit)+" we get "+str(d))
+
+
+
+
+def diabatic_test_eigenspectrum(target_qubit,t_max,J,n,h_sample,q=100):   
 
     dt = t_max/q
-    
+
     ground_eig = np.zeros(q+1)
     first_eig = np.zeros(q+1)
     second_eig = np.zeros(q+1)
@@ -327,7 +474,7 @@ def diabatic_test_eigenspectrum(target_qubit,t_max,J,n,q=100):
     min_diff_eig_3 = np.zeros(q+1)
     for i in range(0,q+1):
 
-        Hamiltonian_at_time_instance = problem_hamiltonian(i*dt,t_max,target_qubit,n,J)+driver_hamiltonian(i*dt,t_max,target_qubit,n)
+        Hamiltonian_at_time_instance = problem_hamiltonian(i*dt,t_max,target_qubit,n,J,h_sample)+driver_hamiltonian(i*dt,t_max,target_qubit,n)
 
         eigenvalues, eigenvectors = eigh(Hamiltonian_at_time_instance)
 
@@ -340,16 +487,49 @@ def diabatic_test_eigenspectrum(target_qubit,t_max,J,n,q=100):
     print(ground_eig[q])
     x_val = np.linspace(0,1,q+1)
 
-    #plt.plot(x_val,ground_eig, label= "ground state energy")
-    #plt.plot(x_val, first_eig, label = "first excited state energy")
-    #plt.plot(x_val,second_eig, label= "second excited state energy")
-    plt.plot(x_val, min_diff_eig_1, label = "first minimum difference")
-    plt.plot(x_val, min_diff_eig_2, label = "second minimum difference")
-    plt.plot(x_val, min_diff_eig_3)
+    plt.plot(x_val,ground_eig, label= "ground state energy")
+    plt.plot(x_val, first_eig, label = "first excited state energy")
+    plt.plot(x_val,second_eig, label= "second excited state energy")
+    #plt.plot(x_val, min_diff_eig_1, label = "first minimum difference")
+    #plt.plot(x_val, min_diff_eig_2, label = "second minimum difference")
+    #plt.plot(x_val, min_diff_eig_3)
     plt.legend()
     plt.show()
 
-target_qubit = 1
 
-diabatic_test_eigenspectrum(target_qubit,t_max,J,n)
+# target_qubit = 1
+# print("this is our generated gaussian h_z"+str(h_sample))
+# print("the given one" + str(h))
+diabatic_test_eigenspectrum(target_qubit,t_max,J,n,h)
 
+
+
+
+
+
+
+
+def diabatic_evolution_probability_plot(initial_eigenvector,comparison_vector,target_qubit, t_max, J, n, h_sample,q=100):   
+
+    state = initial_eigenvector
+
+    dt = t_max/q
+
+      
+    values = np.zeros(q+1)  #index from 0 to q array
+
+    for i in range(0,q+1):
+
+        Hamiltonian_at_time_instance = problem_hamiltonian(i*dt,t_max,target_qubit,n,J,h_sample)+driver_hamiltonian(i*dt,t_max,target_qubit,n)
+        
+        state = np.dot(expm(-1j*dt*Hamiltonian_at_time_instance),state)
+        
+
+        probability = abs(((np.vdot(state,comparison_vector))))**2
+       
+        values[i] = probability
+
+    x_val = np.linspace(0,1,q+1)
+
+    plt.plot(x_val, values)
+    plt.show()
