@@ -333,7 +333,14 @@ def is_hermitian(H, tol=1e-10):
 
 #find solution ------------------------------
 
-J = np.array([[0,1,0],[0,0,1],[0,0,0]])
+# J = np.array([[0,1],[0,0]])
+# n = 2
+# h = h_z(J,n,R=1)
+
+J = np.array([[0,0,1,1,0,1,1],[0,0,0,0,1,0,0],[0,0,0,1,1,0,1],[0,0,0,0,0,0,1],[0,0,0,0,0,1,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]])
+n = 7
+h = h_z(J,n,R=1)
+
 
 H = Classical_H_ising(n,J,h)
 
@@ -396,24 +403,28 @@ def check_solution_degeneracy(n,J,h):
 
     index = Ising_search(H)
 
+    
+
     check_value = H[index][index]
 
     degeneracy_counter = 0
 
     for i in range(n):
 
-        for j in range(n):
+    
 
-            if H[i][j] == check_value:
-                degeneracy_counter += 1
+        if H[i][i] == check_value:
+            degeneracy_counter += 1
     
     if degeneracy_counter> 1:
-        return True
+        return True, degeneracy_counter
     else:
-        return False
+        return False, degeneracy_counter, check_value, index
 
 
-print(check_solution_degeneracy(n,J,h_MIS))
+print(check_solution_degeneracy(n,J,h))
+
+
 
 
 
@@ -475,7 +486,7 @@ def diabatic_evolution_test_probability(initial_eigenvector,comparison_vector,ta
 
 
 
-def diabatic_test_eigenspectrum(target_qubit,t_max,J,n,h_sample,q=100):   
+def diabatic_test_eigenspectrum(target_qubit,t_max,J,n,h_sample,q=100,r = 1e9):   
 
     dt = t_max/q
 
@@ -487,7 +498,7 @@ def diabatic_test_eigenspectrum(target_qubit,t_max,J,n,h_sample,q=100):
     min_diff_eig_3 = np.zeros(q+1)
     for i in range(0,q+1):
 
-        Hamiltonian_at_time_instance = problem_hamiltonian(i*dt,t_max,target_qubit,n,J,h_sample)+driver_hamiltonian(i*dt,t_max,target_qubit,n)
+        Hamiltonian_at_time_instance = problem_hamiltonian(i*dt,t_max,target_qubit,n,J,h_sample)+driver_hamiltonian(i*dt,t_max,target_qubit,n,R=r)
 
         eigenvalues, eigenvectors = eigh(Hamiltonian_at_time_instance)
 
@@ -522,13 +533,15 @@ def diabatic_test_eigenspectrum(target_qubit,t_max,J,n,h_sample,q=100):
 
 
 #this function is self contained!
-def diabatic_evolution_probability_plot(target_qubit, t_max, J, n, h_sample,q=100, test_superposition_state = False,test_excited_state = False):   
+def diabatic_evolution_probability_plot(target_qubit, t_max, J, n, h_sample,q=100, test_superposition_state = False,test_excited_state = False, r = 1e9):   
 
     #find the initial state
 
+    
+
     initial_p_h = problem_hamiltonian(0,t_max,target_qubit,n,J,h_sample)
 
-    initial_d_h = driver_hamiltonian(0,t_max,target_qubit,n)
+    initial_d_h = driver_hamiltonian(0,t_max,target_qubit,n,R=r)
 
     initial_hamiltonian = initial_d_h+initial_p_h
 
@@ -561,7 +574,7 @@ def diabatic_evolution_probability_plot(target_qubit, t_max, J, n, h_sample,q=10
 
     for i in range(0,q+1):
 
-        Hamiltonian_at_time_instance = problem_hamiltonian(i*dt,t_max,target_qubit,n,J,h_sample)+driver_hamiltonian(i*dt,t_max,target_qubit,n)
+        Hamiltonian_at_time_instance = problem_hamiltonian(i*dt,t_max,target_qubit,n,J,h_sample)+driver_hamiltonian(i*dt,t_max,target_qubit,n,R=r)
         
         state = np.dot(expm(-1j*dt*Hamiltonian_at_time_instance),state)
         
@@ -585,8 +598,17 @@ def diabatic_evolution_probability_plot(target_qubit, t_max, J, n, h_sample,q=10
 target_qubit = 1
 t_max = 100e-9
 
+J = np.array([[0,0,1,1,0,1,1],[0,0,0,0,1,0,0],[0,0,0,1,1,0,1],[0,0,0,0,0,0,1],[0,0,0,0,0,1,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]])
+n = 7
+h = h_z(J,n,R=1)
 
-#diabatic_evolution_probability_plot(target_qubit,t_max,J,n,h_sample,test_excited_state=True)
+# J = -0.5*1e9*np.array([[0,0,1,1,0,1,1],[0,0,0,0,1,0,0],[0,0,0,1,1,0,1],[0,0,0,0,0,0,1],[0,0,0,0,0,1,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]])
+# n = 7
+# #h = 1e9*np.array([1,-0.32610452,0.16998698,-0.12109217,-0.58725647,0.19980255,-0.4370849])
+# h = h_z(J,n)
+
+diabatic_test_eigenspectrum(target_qubit, t_max, J, n, h, r=1)
+#diabatic_evolution_probability_plot(target_qubit,t_max,J,n,h,test_superposition_state=True,r = 1)
 
 
 
