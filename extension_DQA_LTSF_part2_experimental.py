@@ -423,7 +423,8 @@ def check_solution_degeneracy(n,J,h):
         return False, degeneracy_counter, check_value, index
 
 
-print(check_solution_degeneracy(n,J,h))
+
+#print(check_solution_degeneracy(n,J,h))
 
 
 
@@ -487,7 +488,7 @@ def diabatic_evolution_test_probability(initial_eigenvector,comparison_vector,ta
 
 
 
-def diabatic_test_eigenspectrum(target_qubit,t_max,J,n,h_sample,q=100,r = 1e9):   
+def diabatic_test_eigenspectrum(target_qubit,t_max,J,n,h_sample,q=100,r = 1e9, energy_difference = True):   
 
     dt = t_max/q
 
@@ -512,12 +513,16 @@ def diabatic_test_eigenspectrum(target_qubit,t_max,J,n,h_sample,q=100,r = 1e9):
     print(ground_eig[q])
     x_val = np.linspace(0,1,q+1)
 
-    plt.plot(x_val,ground_eig, label= "ground state energy")
-    plt.plot(x_val, first_eig, label = "first excited state energy")
-    plt.plot(x_val,second_eig, label= "second excited state energy")
-    #plt.plot(x_val, min_diff_eig_1, label = "first minimum difference")
-    #plt.plot(x_val, min_diff_eig_2, label = "second minimum difference")
-    #plt.plot(x_val, min_diff_eig_3)
+    if energy_difference == True:
+        plt.plot(x_val, min_diff_eig_1, label = "first minimum difference")
+        plt.plot(x_val, min_diff_eig_2, label = "second minimum difference")
+        plt.plot(x_val, min_diff_eig_3)
+
+    else:
+        plt.plot(x_val,ground_eig, label= "ground state energy")
+        plt.plot(x_val, first_eig, label = "first excited state energy")
+        plt.plot(x_val,second_eig, label= "second excited state energy")
+
     plt.legend()
     plt.show()
 
@@ -596,20 +601,23 @@ def diabatic_evolution_probability_plot(target_qubit, t_max, J, n, h_sample,q=10
     
 
 
-target_qubit = 2
-t_max = 100
+target_qubit = 7
+t_max = 45
 
 J = np.array([[0,0,1,1,0,1,1],[0,0,0,0,1,0,0],[0,0,0,1,1,0,1],[0,0,0,0,0,0,1],[0,0,0,0,0,1,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]])
 n = 7
 h = h_z(J,n,R=1)
 
-# J = -0.5*1e9*np.array([[0,0,1,1,0,1,1],[0,0,0,0,1,0,0],[0,0,0,1,1,0,1],[0,0,0,0,0,0,1],[0,0,0,0,0,1,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]])
-# n = 7
-# #h = 1e9*np.array([1,-0.32610452,0.16998698,-0.12109217,-0.58725647,0.19980255,-0.4370849])
-# h = h_z(J,n)
+J = np.array([[0,0,1,1,0,1,1],[0,0,0,0,1,0,0],[0,0,0,1,1,0,1],[0,0,0,0,0,0,1],[0,0,0,0,0,1,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]])
+n = 7
+h = np.array([1,-0.32610452,0.16998698,-0.12109217,-0.58725647,0.19980255,-0.4370849])
+#h = h_z(J,n)
 
-#diabatic_test_eigenspectrum(target_qubit, t_max, J, n, h, r=1)
+print(check_solution_degeneracy(n,J,h))
+diabatic_test_eigenspectrum(target_qubit, t_max, J, n, h, r=1)
 diabatic_evolution_probability_plot(target_qubit,t_max,J,n,h,test_superposition_state=False,r = 1)
+
+
 
 
 

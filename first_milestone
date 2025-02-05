@@ -65,7 +65,7 @@ def H_ising(n,M,kappa):
 
         h[k] = total + kappa
 
-    #h = np.array([1,-0.32610452,0.16998698,-0.12109217,-0.58725647,0.19980255,-0.4370849])
+    h = np.array([1,-0.32610452,0.16998698,-0.12109217,-0.58725647,0.19980255,-0.4370849])
     
     #to find H_ising now
     H = np.zeros((2**n,2**n))
@@ -230,7 +230,7 @@ def adiabatic_evol(t_max, M, n, q=200):  #assume for now k and q are the same as
     vals = np.zeros(q+1)
     dt = t_max/q
 
-    for i in range(0,q):   #we have -1 to include 0 in range
+    for i in range(0,q+1):   #we have -1 to include 0 in range
 
         W = np.dot(expm(-1j*dt*Hamiltonian(n,i*dt,t_max,M)),W)  #is this matrix multiplication?
 
@@ -386,28 +386,15 @@ def plot_prob(vals_1, vals_2, t_max, numbers):   #vals_1 and vals_2 have to be t
 
     plt.show()
 
+def plot_single_probability_graph(val):
 
-#plot_prob(v)
+    n = len(val)
 
+    x_val = np.linspace(0,1,n)
 
-def plot_wavefunction_evolution(vals):   #delete this??! 
-
-    iterations = len(vals)
-
-
-    x = list(iterations)
-
-    plt.plot(x,vals)
-
-    plt.xlabel("iterations")
-
-    plt.ylabel("wavefunction")
-
+    plt.plot(x_val, val)
     plt.show()
 
-#values = adiabatic_evol(10, M, 5, 200)
-
-#plot_wavefunction_evolution(values)
 
 
 
@@ -648,11 +635,16 @@ n = 7
 #g = generate_adjacency_matrix(n)
 
 J =np.array([[0,0,1,1,0,1,1],[0,0,0,0,1,0,0],[0,0,0,1,1,0,1],[0,0,0,0,0,0,1],[0,0,0,0,0,1,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]])
-visualize_graph(J)   
+#visualize_graph(J)   
 
-eigenvalue_graph(J,1000,150,n)
+#eigenvalue_graph(J,1000,150,n)
 
-# plot_prob(adiabatic_prob([1000],g,n,500))
+#print(len(adiabatic_prob([100],J,n,q=100)[0]))
+prob_problem_1 = adiabatic_prob([1000],J,n,q=200)[0]
+
+print(prob_problem_1[-1])
+
+plot_single_probability_graph(prob_problem_1)
 
 #------------------------------------
 
@@ -744,18 +736,6 @@ def graphs_for_the_poster(n,M,t_max,q):
     eigenvalue_graph(g)
 
     eigenvalue_graph(M)
-
-        
-
-    
-
-
-
-
-
-
-
-
 
 
 def E_res(M,n, T_range,T_num,q):
@@ -1100,6 +1080,7 @@ def degenerate_graph_check(M,t_max,q,n,stop_value):
 
 
 
+#def adiabatic_till termination(J, n, dt):
 
 
 
