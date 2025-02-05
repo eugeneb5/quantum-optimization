@@ -200,7 +200,7 @@ def Ising_search(H):
 J = -0.5*1e9*np.array([[0,0,1,1,0,1,1],[0,0,0,0,1,0,0],[0,0,0,1,1,0,1],[0,0,0,0,0,0,1],[0,0,0,0,0,1,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]])
 n = 7
 #h_sample = gaussian_h_z(n)  #need to have a method of saving it!!  write onto a txt file and save and reread it off of it!!
-h_sample = h_z(J,n)
+h_MIS = h_z(J,n)
 h = 1e9*np.array([1,-0.32610452,0.16998698,-0.12109217,-0.58725647,0.19980255,-0.4370849])
 
 
@@ -283,16 +283,7 @@ def init_psi(n):    #start with this wavefunction in the evolution! - found out 
 
 #CHECK initial eigenvector!-------------------------------------------------------------
 
-#check for t = 0:
-t_max = 100e-9
-target_qubit = 1
 
-n=7
-initial_p_h = problem_hamiltonian(0,t_max,target_qubit,n,J,h_sample)
-
-initial_d_h = driver_hamiltonian(0,t_max,target_qubit,n)
-
-initial_hamiltonian = initial_d_h+initial_p_h
 
 
 
@@ -330,14 +321,7 @@ def is_hermitian(H, tol=1e-10):
 #print(is_hermitian(initial_hamiltonian)) # it is hermitian!!
 #eigenvalues, eigenvectors = eigsh(initial_hamiltonian, k=num_states, which='SA')  #SA for smallest eigenvalues; use this for larger matrices, is approximate
 
-eigenvalues, eigenvectors = eigh(initial_hamiltonian) #this method is exact, diagonalization!
-#print(np.min(eigenvalues))
 
-
-first_eigenvector = eigenvectors[:,0]
-second_eigenvector = eigenvectors[:,1]
-
-#print(first_eigenvector) # try with only one eigenvector at first..
 
 
 
@@ -348,6 +332,8 @@ second_eigenvector = eigenvectors[:,1]
 
 
 #find solution ------------------------------
+
+J = np.array([[0,1,0],[0,0,1],[0,0,0]])
 
 H = Classical_H_ising(n,J,h)
 
@@ -404,6 +390,32 @@ comparison_vector = ground_wf(n,J,h)
 
 
 
+def check_solution_degeneracy(n,J,h):
+
+    H = Classical_H_ising(n,J,h)
+
+    index = Ising_search(H)
+
+    check_value = H[index][index]
+
+    degeneracy_counter = 0
+
+    for i in range(n):
+
+        for j in range(n):
+
+            if H[i][j] == check_value:
+                degeneracy_counter += 1
+    
+    if degeneracy_counter> 1:
+        return True
+    else:
+        return False
+
+
+print(check_solution_degeneracy(n,J,h_MIS))
+
+
 
 
 
@@ -445,19 +457,20 @@ def diabatic_evolution_test_probability(initial_eigenvector,comparison_vector,ta
 
     return values[q] #i.e. final value
 
-
+#DONT USE THIS FUNCTION ANYMORE!!
 
 
 
 #initial_eigenvector = 2**(-0.5)*first_eigenvector+2**(-0.5)*second_eigenvector
-initial_eigenvector = first_eigenvector
+#initial_eigenvector = first_eigenvector
 #initial_eigenvector = second_eigenvector
 
 
 
-d = diabatic_evolution_test_probability(initial_eigenvector,comparison_vector,target_qubit,t_max,J,n,h)
 
-print("for target qubit set to "+ str(target_qubit)+" we get "+str(d))
+# d = diabatic_evolution_test_probability(initial_eigenvector,comparison_vector,target_qubit,t_max,J,n,h)
+
+# print("for target qubit set to "+ str(target_qubit)+" we get "+str(d))
 
 
 
@@ -500,7 +513,7 @@ def diabatic_test_eigenspectrum(target_qubit,t_max,J,n,h_sample,q=100):
 # target_qubit = 1
 # print("this is our generated gaussian h_z"+str(h_sample))
 # print("the given one" + str(h))
-diabatic_test_eigenspectrum(target_qubit,t_max,J,n,h)
+#diabatic_test_eigenspectrum(target_qubit,t_max,J,n,h_sample)
 
 
 
@@ -508,14 +521,42 @@ diabatic_test_eigenspectrum(target_qubit,t_max,J,n,h)
 
 
 
+#this function is self contained!
+def diabatic_evolution_probability_plot(target_qubit, t_max, J, n, h_sample,q=100, test_superposition_state = False,test_excited_state = False):   
 
-def diabatic_evolution_probability_plot(initial_eigenvector,comparison_vector,target_qubit, t_max, J, n, h_sample,q=100):   
+    #find the initial state
 
-    state = initial_eigenvector
+    initial_p_h = problem_hamiltonian(0,t_max,target_qubit,n,J,h_sample)
+
+    initial_d_h = driver_hamiltonian(0,t_max,target_qubit,n)
+
+    initial_hamiltonian = initial_d_h+initial_p_h
+
+    eigenvalues, eigenvectors = eigh(initial_hamiltonian)
+
+    first_eigenvector = eigenvectors[:,0]
+    second_eigenvector = eigenvectors[:,1]
+
+    state = first_eigenvector
+
+    if test_superposition_state == True:
+
+        state = 2**(-0.5)*first_eigenvector+2**(-0.5)*second_eigenvector
+
+    if test_excited_state == True:
+
+        state = second_eigenvector
+    
+    
+    
+    #find the comparison state
+
+    comparison_vector = ground_wf(n,J,h_sample)
+
+
+
 
     dt = t_max/q
-
-      
     values = np.zeros(q+1)  #index from 0 to q array
 
     for i in range(0,q+1):
@@ -532,4 +573,22 @@ def diabatic_evolution_probability_plot(initial_eigenvector,comparison_vector,ta
     x_val = np.linspace(0,1,q+1)
 
     plt.plot(x_val, values)
+    plt.title("Probability curve through the annealing for target qubit "+str(target_qubit))
+    plt.xlabel("s")
+    plt.ylabel("Probability")
     plt.show()
+    print("for target qubit set to "+ str(target_qubit)+" we get final probability of "+str(values[q]))
+
+    
+
+
+target_qubit = 1
+t_max = 100e-9
+
+
+#diabatic_evolution_probability_plot(target_qubit,t_max,J,n,h_sample,test_excited_state=True)
+
+
+
+
+
