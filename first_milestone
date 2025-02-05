@@ -65,7 +65,7 @@ def H_ising(n,M,kappa):
 
         h[k] = total + kappa
 
-    h = np.array([1,-0.32610452,0.16998698,-0.12109217,-0.58725647,0.19980255,-0.4370849])
+    #h = np.array([1,-0.32610452,0.16998698,-0.12109217,-0.58725647,0.19980255,-0.4370849])
     
     #to find H_ising now
     H = np.zeros((2**n,2**n))
@@ -275,7 +275,7 @@ def ground_wf(n,M: ArrayLike):  #is set to be a covector!  #one to be compared t
     i = Ising_search(H)
 
     vector = np.zeros((2**n))
-
+    
     vector[i] = 1
 
     return vector
@@ -439,7 +439,6 @@ def visualize_graph(adj_matrix):
 
 
 
-
 def verify_min_value_H(H_ising):  #this function returns a tuple!!
 
     minimum_value = np.min(H_ising)
@@ -468,7 +467,7 @@ def verify_min_value_H(H_ising):  #this function returns a tuple!!
 
 # H = H_ising(n,g,0.5)
 
-# print(verify_min_value_H(H))   H is always diagonal!
+#print(verify_min_value_H(H))   H is always diagonal!
 
 #------------------------------------------
 
@@ -615,13 +614,13 @@ def eigenvalue_graph(M,t_max,q,n):
     #eigenvalue_difference = eigenvalue_difference**-2
 
     
-    #plt.plot(x_val, eigenvalue_difference, linestyle = "--")
-    #plt.plot(x_val, eigenvalue_diff_2)
-    plt.plot(x_val,eigenvalues_set[:,0], label= "ground state energy")
-    plt.plot(x_val, eigenvalues_set[:,1], label = "first excited state energy")
-    plt.plot(x_val,eigenvalues_set[:,2], label= "second excited state energy")
-    plt.plot(x_val, eigenvalues_set[:,3], label = "third excited state energy")
-    plt.scatter(x_val[-1], actual_eigenvalue_ground, label = "true ground state eigenvalue", s = 10, color = 'red')
+    plt.plot(x_val, eigenvalue_difference, linestyle = "--", label = "ground and excited minimum")
+    plt.plot(x_val, eigenvalue_diff_2, label = "first and second excited difference")
+    #plt.plot(x_val,eigenvalues_set[:,0], label= "ground state energy")
+    #plt.plot(x_val, eigenvalues_set[:,1], label = "first excited state energy")
+    #plt.plot(x_val,eigenvalues_set[:,2], label= "second excited state energy")
+    #plt.plot(x_val, eigenvalues_set[:,3], label = "third excited state energy")
+    #plt.scatter(x_val[-1], actual_eigenvalue_ground, label = "true ground state eigenvalue", s = 10, color = 'red')
     plt.legend()
     plt.show()
     #print(eigenvalue_difference[-1])
@@ -630,21 +629,23 @@ def eigenvalue_graph(M,t_max,q,n):
 
 # --------------------TEST EXAMPLE
 
-n = 7
+n = 5
 
-#g = generate_adjacency_matrix(n)
+g = generate_adjacency_matrix(n)
 
-J =np.array([[0,0,1,1,0,1,1],[0,0,0,0,1,0,0],[0,0,0,1,1,0,1],[0,0,0,0,0,0,1],[0,0,0,0,0,1,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]])
-#visualize_graph(J)   
+eigenvalue_graph(g,1000,150,n)
 
-#eigenvalue_graph(J,1000,150,n)
+# J =np.array([[0,0,1,1,0,1,1],[0,0,0,0,1,0,0],[0,0,0,1,1,0,1],[0,0,0,0,0,0,1],[0,0,0,0,0,1,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]])
+# #visualize_graph(J)   
 
-#print(len(adiabatic_prob([100],J,n,q=100)[0]))
-prob_problem_1 = adiabatic_prob([1000],J,n,q=200)[0]
+# #eigenvalue_graph(J,1000,150,n)
 
-print(prob_problem_1[-1])
+# #print(len(adiabatic_prob([100],J,n,q=100)[0]))
+# prob_problem_1 = adiabatic_prob([1000],J,n,q=200)[0]
 
-plot_single_probability_graph(prob_problem_1)
+# print(prob_problem_1[-1])
+
+# plot_single_probability_graph(prob_problem_1)
 
 #------------------------------------
 

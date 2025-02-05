@@ -346,7 +346,7 @@ H = Classical_H_ising(n,J,h)
 
 index = Ising_search(H)
 
-print("ground state eigenvalue index: "+str(index))
+#print("ground state eigenvalue index: "+str(index))
 
 #print(H)
 
@@ -393,7 +393,7 @@ def ground_wf(n,J,h):  #is set to be a covector!  #one to be compared to!!
     return vector
 
 
-comparison_vector = ground_wf(n,J,h)
+#comparison_vector = ground_wf(n,J,h)
 
 
 
@@ -421,7 +421,6 @@ def check_solution_degeneracy(n,J,h):
         return True, degeneracy_counter
     else:
         return False, degeneracy_counter, check_value, index
-
 
 
 #print(check_solution_degeneracy(n,J,h))
@@ -471,21 +470,6 @@ def diabatic_evolution_test_probability(initial_eigenvector,comparison_vector,ta
     return values[q] #i.e. final value
 
 #DONT USE THIS FUNCTION ANYMORE!!
-
-
-
-#initial_eigenvector = 2**(-0.5)*first_eigenvector+2**(-0.5)*second_eigenvector
-#initial_eigenvector = first_eigenvector
-#initial_eigenvector = second_eigenvector
-
-
-
-
-# d = diabatic_evolution_test_probability(initial_eigenvector,comparison_vector,target_qubit,t_max,J,n,h)
-
-# print("for target qubit set to "+ str(target_qubit)+" we get "+str(d))
-
-
 
 
 def diabatic_test_eigenspectrum(target_qubit,t_max,J,n,h_sample,q=100,r = 1e9, energy_difference = True):   
@@ -601,21 +585,55 @@ def diabatic_evolution_probability_plot(target_qubit, t_max, J, n, h_sample,q=10
     
 
 
-target_qubit = 7
-t_max = 45
+#TEST CASE -----------------------------------------
 
-J = np.array([[0,0,1,1,0,1,1],[0,0,0,0,1,0,0],[0,0,0,1,1,0,1],[0,0,0,0,0,0,1],[0,0,0,0,0,1,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]])
-n = 7
-h = h_z(J,n,R=1)
+# target_qubit = 3
+# t_max = 45
 
-J = np.array([[0,0,1,1,0,1,1],[0,0,0,0,1,0,0],[0,0,0,1,1,0,1],[0,0,0,0,0,0,1],[0,0,0,0,0,1,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]])
-n = 7
-h = np.array([1,-0.32610452,0.16998698,-0.12109217,-0.58725647,0.19980255,-0.4370849])
-#h = h_z(J,n)
+# J = np.array([[0,0,1,1,0,1,1],[0,0,0,0,1,0,0],[0,0,0,1,1,0,1],[0,0,0,0,0,0,1],[0,0,0,0,0,1,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]])
+# n = 7
+# h = h_z(J,n,R=1)
 
-print(check_solution_degeneracy(n,J,h))
-diabatic_test_eigenspectrum(target_qubit, t_max, J, n, h, r=1)
-diabatic_evolution_probability_plot(target_qubit,t_max,J,n,h,test_superposition_state=False,r = 1)
+# J = np.array([[0,0,1,1,0,1,1],[0,0,0,0,1,0,0],[0,0,0,1,1,0,1],[0,0,0,0,0,0,1],[0,0,0,0,0,1,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]])
+# n = 7
+# h = np.array([1,-0.32610452,0.16998698,-0.12109217,-0.58725647,0.19980255,-0.4370849])
+# #h = h_z(J,n)
+
+# print(check_solution_degeneracy(n,J,h))
+# diabatic_test_eigenspectrum(target_qubit, t_max, J, n, h, r=1)
+# diabatic_evolution_probability_plot(target_qubit,t_max,J,n,h,test_superposition_state=False,r = 1)
+
+
+
+
+
+
+
+
+
+
+
+#FOR generating random problems
+
+def generate_adjacency_matrix(n):
+
+    M = np.zeros((n,n), dtype = int)  #put dtype to ensure no floats in zero entries
+
+
+    for i in range(n):
+        for j in range(i+1,n):  #add i+1 to ensure they aren't self connected - can this be added though??
+
+            edge = np.random.choice([0,1])
+
+            M[i,j] = edge
+
+    return M
+
+
+
+
+
+
 
 
 
