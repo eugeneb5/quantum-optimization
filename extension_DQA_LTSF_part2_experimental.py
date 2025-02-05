@@ -346,7 +346,7 @@ H = Classical_H_ising(n,J,h)
 
 index = Ising_search(H)
 
-print(index)
+print("ground state eigenvalue index: "+str(index))
 
 #print(H)
 
@@ -409,12 +409,13 @@ def check_solution_degeneracy(n,J,h):
 
     degeneracy_counter = 0
 
-    for i in range(n):
+    for i in range(2**n):
 
     
 
-        if H[i][i] == check_value:
+        if np.isclose(H[i][i], check_value, atol = 1e-5, equal_nan = True):
             degeneracy_counter += 1
+            print(H[i][i])
     
     if degeneracy_counter> 1:
         return True, degeneracy_counter
@@ -595,8 +596,8 @@ def diabatic_evolution_probability_plot(target_qubit, t_max, J, n, h_sample,q=10
     
 
 
-target_qubit = 1
-t_max = 100e-9
+target_qubit = 2
+t_max = 100
 
 J = np.array([[0,0,1,1,0,1,1],[0,0,0,0,1,0,0],[0,0,0,1,1,0,1],[0,0,0,0,0,0,1],[0,0,0,0,0,1,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]])
 n = 7
@@ -607,8 +608,8 @@ h = h_z(J,n,R=1)
 # #h = 1e9*np.array([1,-0.32610452,0.16998698,-0.12109217,-0.58725647,0.19980255,-0.4370849])
 # h = h_z(J,n)
 
-diabatic_test_eigenspectrum(target_qubit, t_max, J, n, h, r=1)
-#diabatic_evolution_probability_plot(target_qubit,t_max,J,n,h,test_superposition_state=True,r = 1)
+#diabatic_test_eigenspectrum(target_qubit, t_max, J, n, h, r=1)
+diabatic_evolution_probability_plot(target_qubit,t_max,J,n,h,test_superposition_state=False,r = 1)
 
 
 
