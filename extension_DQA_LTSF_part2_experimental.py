@@ -6,6 +6,7 @@ from scipy.linalg import eigh
 from scipy.sparse.linalg import eigsh   #for larger matrices!
 import matplotlib.pyplot as plt
 import networkx as nx
+import os
 
 
 
@@ -415,23 +416,16 @@ def check_solution_degeneracy(n,J,h):
 
         if np.isclose(H[i][i], check_value, atol = 1e-5, equal_nan = True):
             degeneracy_counter += 1
+            print(i)
             print(H[i][i])
     
     if degeneracy_counter> 1:
         return True, degeneracy_counter
     else:
-        return False, degeneracy_counter, check_value, index
+        return False, degeneracy_counter
 
 
 #print(check_solution_degeneracy(n,J,h))
-
-
-
-
-
-
-
-
 
 
 
@@ -628,6 +622,98 @@ def generate_adjacency_matrix(n):
             M[i,j] = edge
 
     return M
+
+
+def visualize_graph(adj_matrix):
+
+    graph = nx.from_numpy_array(adj_matrix)
+
+    plt.figure(figsize=(8, 8))  # Set the figure size
+    nx.draw(
+        graph,
+        with_labels=True,            # Show node labels
+        node_color='skyblue',        # Node color
+        node_size=500,               # Node size
+        edge_color='gray',           # Edge color
+        font_size=10,                # Font size for labels
+    )
+    plt.title("Graph Visualization")
+    plt.show()
+
+
+def save_matrix(n,G,h_G, rewrite = False):
+
+    check = check_solution_degeneracy(n,G,h_G)[0]
+    if check == False:
+        
+        filename = "non_degenerate_solution_matrix.txt"
+        print("saving non-degenerate solution graph")
+    else:
+
+        filename = "degenerate_solution_matrix.txt"
+        print("saving degen_solution matrix")
+    matrix = G
+    if rewrite:
+        with open(filename, 'w') as f:
+            for row in matrix:
+                row_str = ' '.join(str(num) for num in row)
+                f.write(row_str + '\n')
+    else:
+        if not os.path.exists(filename):
+            with open(filename, 'w') as f:
+                for row in matrix:
+                    row_str = ' '.join(str(num) for num in row)
+                    f.write(row_str + '\n')
+        
+
+
+def read_matrix(read_degenerate):
+
+    matrix = []
+    if read_degenerate:
+        filename = 'degenerate_solution_matrix.txt'
+    else:
+        filename = "non_degenerate_solution_matrix.txt"
+    with open(filename, 'r') as file:
+        for line in file:
+       
+            row = line.strip().split()
+            row = [int(num) for num in row]
+            matrix.append(row)
+    return np.array(matrix)
+
+
+
+
+#test case ----
+n = 7
+G = generate_adjacency_matrix(n)
+#h_G = h_z(G,n,R=1)
+#print(check_solution_degeneracy(n,G,h_G))
+#save_matrix(n,G,h_G, rewrite = True)
+
+
+M = read_matrix(read_degenerate=False)
+h_sample = h_z(M,n,R=1)
+target_qubit = 2
+visualize_graph(M)
+
+
+
+
+# diabatic_test_eigenspectrum(target_qubit,50,M,n,h_sample,r=1)
+# diabatic_evolution_probability_plot(target_qubit,100,M,n,h_sample,r=1)
+
+
+
+
+
+
+
+
+
+
+
 
 
 

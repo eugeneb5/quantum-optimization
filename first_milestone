@@ -610,7 +610,7 @@ def eigenvalue_graph(M,t_max,q,n):
 
     eigenvalue_difference = eigenvalues_set[:,1]-eigenvalues_set[:,0]
     eigenvalue_diff_2 = eigenvalues_set[:,2]-eigenvalues_set[:,0]
-
+    print(np.min(eigenvalue_difference),eigenvalue_difference[-1])
     #eigenvalue_difference = eigenvalue_difference**-2
 
     
@@ -627,11 +627,29 @@ def eigenvalue_graph(M,t_max,q,n):
 
 
 
+def read_matrix(read_degenerate):
+
+    matrix = []
+    if read_degenerate:
+        filename = 'degenerate_solution_matrix.txt'
+    else:
+        filename = "non_degenerate_solution_matrix.txt"
+        print("reading non-degen")
+    with open(filename, 'r') as file:
+        for line in file:
+       
+            row = line.strip().split()
+            row = [int(num) for num in row]
+            matrix.append(row)
+    return np.array(matrix)
+
 # --------------------TEST EXAMPLE
 
-n = 5
 
-g = generate_adjacency_matrix(n)
+
+g = read_matrix(read_degenerate=False)
+
+n = len(g)
 
 eigenvalue_graph(g,1000,150,n)
 
@@ -640,12 +658,12 @@ eigenvalue_graph(g,1000,150,n)
 
 # #eigenvalue_graph(J,1000,150,n)
 
-# #print(len(adiabatic_prob([100],J,n,q=100)[0]))
-# prob_problem_1 = adiabatic_prob([1000],J,n,q=200)[0]
+#print(len(adiabatic_prob([100],g,n,q=100)[0]))
+#prob_problem_1 = adiabatic_prob([1000],g,n,q=200)[0]
 
 # print(prob_problem_1[-1])
 
-# plot_single_probability_graph(prob_problem_1)
+#plot_single_probability_graph(prob_problem_1)
 
 #------------------------------------
 
@@ -869,9 +887,9 @@ def plot_n_and_Tmax(n_initial, n_final, repeats):
 
 #----------------------------------
 
-g = np.array([[0,1,1,1,1],[0,0,1,1,0],[0,0,0,0,0,],[0,0,0,0,1],[0,0,0,0,0]])  #this matrix should have degenerate ground state eigenvalues
+# g = np.array([[0,1,1,1,1],[0,0,1,1,0],[0,0,0,0,0,],[0,0,0,0,1],[0,0,0,0,0]])  #this matrix should have degenerate ground state eigenvalues
 
-n = 5
+# n = 5
 
 #eigenvalue_graph(g,1000,100,n)
 
