@@ -610,15 +610,15 @@ def eigenvalue_graph(M,t_max,q,n):
 
     eigenvalue_difference = eigenvalues_set[:,1]-eigenvalues_set[:,0]
     eigenvalue_diff_2 = eigenvalues_set[:,2]-eigenvalues_set[:,0]
-    print(np.min(eigenvalue_difference),eigenvalue_difference[-1])
+    print("the minimum energy difference is " +str(np.min(eigenvalue_difference)))
     #eigenvalue_difference = eigenvalue_difference**-2
 
     
-    plt.plot(x_val, eigenvalue_difference, linestyle = "--", label = "ground and excited minimum")
-    plt.plot(x_val, eigenvalue_diff_2, label = "first and second excited difference")
-    #plt.plot(x_val,eigenvalues_set[:,0], label= "ground state energy")
-    #plt.plot(x_val, eigenvalues_set[:,1], label = "first excited state energy")
-    #plt.plot(x_val,eigenvalues_set[:,2], label= "second excited state energy")
+    #plt.plot(x_val, eigenvalue_difference, linestyle = "--", label = "ground and excited minimum")
+    #plt.plot(x_val, eigenvalue_diff_2, label = "first and second excited difference")
+    plt.plot(x_val,eigenvalues_set[:,0], label= "ground state energy")
+    plt.plot(x_val, eigenvalues_set[:,1], label = "first excited state energy")
+    plt.plot(x_val,eigenvalues_set[:,2], label= "second excited state energy")
     #plt.plot(x_val, eigenvalues_set[:,3], label = "third excited state energy")
     #plt.scatter(x_val[-1], actual_eigenvalue_ground, label = "true ground state eigenvalue", s = 10, color = 'red')
     plt.legend()
@@ -650,20 +650,22 @@ def read_matrix(read_degenerate):
 g = read_matrix(read_degenerate=False)
 
 n = len(g)
+print(n)
+#print(g)
 
-eigenvalue_graph(g,1000,150,n)
+#eigenvalue_graph(g,1000,150,n)
 
 # J =np.array([[0,0,1,1,0,1,1],[0,0,0,0,1,0,0],[0,0,0,1,1,0,1],[0,0,0,0,0,0,1],[0,0,0,0,0,1,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]])
 # #visualize_graph(J)   
 
-# #eigenvalue_graph(J,1000,150,n)
+#eigenvalue_graph(J,1000,150,n)
 
 #print(len(adiabatic_prob([100],g,n,q=100)[0]))
-#prob_problem_1 = adiabatic_prob([1000],g,n,q=200)[0]
+prob_problem_1 = adiabatic_prob([36],g,n,q=200)[0]
 
-# print(prob_problem_1[-1])
+print(prob_problem_1[-1])
 
-#plot_single_probability_graph(prob_problem_1)
+plot_single_probability_graph(prob_problem_1)
 
 #------------------------------------
 

@@ -109,9 +109,9 @@ def h_z(J, n, kappa = 0.5, R=1e9):  #need to tinker with this one! we want to no
 
     #to normalize:
 
-    h_norm = (h*R) / np.max(np.abs(h))
+    #h_norm = (h*R) / np.max(np.abs(h))
 
-    return h_norm
+    return h
 
 def b_coefficients_true(t,t_max,s_x):
     
@@ -338,9 +338,9 @@ def is_hermitian(H, tol=1e-10):
 # n = 2
 # h = h_z(J,n,R=1)
 
-J = np.array([[0,0,1,1,0,1,1],[0,0,0,0,1,0,0],[0,0,0,1,1,0,1],[0,0,0,0,0,0,1],[0,0,0,0,0,1,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]])
-n = 7
-h = h_z(J,n,R=1)
+# J = np.array([[0,0,1,1,0,1,1],[0,0,0,0,1,0,0],[0,0,0,1,1,0,1],[0,0,0,0,0,0,1],[0,0,0,0,0,1,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]])
+# n = 7
+# h = h_z(J,n,R=1)
 
 
 H = Classical_H_ising(n,J,h)
@@ -686,23 +686,27 @@ def read_matrix(read_degenerate):
 
 
 #test case ----
-n = 7
-G = generate_adjacency_matrix(n)
-#h_G = h_z(G,n,R=1)
-#print(check_solution_degeneracy(n,G,h_G))
-#save_matrix(n,G,h_G, rewrite = True)
+n = 8
+# G = generate_adjacency_matrix(n)
+# h_G = h_z(G,n,R=1)
+# print(check_solution_degeneracy(n,G,h_G))
+# save_matrix(n,G,h_G, rewrite = True)
 
 
 M = read_matrix(read_degenerate=False)
+
 h_sample = h_z(M,n,R=1)
-target_qubit = 2
-visualize_graph(M)
+target_qubit = 9
+#visualize_graph(M)
+
+# print(np.shape(Classical_H_ising(n,M,h_sample)))
+# print(check_solution_degeneracy(n,M,h_sample))
 
 
 
 
-# diabatic_test_eigenspectrum(target_qubit,50,M,n,h_sample,r=1)
-# diabatic_evolution_probability_plot(target_qubit,100,M,n,h_sample,r=1)
+diabatic_test_eigenspectrum(target_qubit,50,M,n,h_sample,r=1)
+diabatic_evolution_probability_plot(target_qubit,36,M,n,h_sample,r=1)
 
 
 
