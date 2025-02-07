@@ -653,6 +653,7 @@ n = len(g)
 print(n)
 #print(g)
 
+
 #eigenvalue_graph(g,1000,150,n)
 
 # J =np.array([[0,0,1,1,0,1,1],[0,0,0,0,1,0,0],[0,0,0,1,1,0,1],[0,0,0,0,0,0,1],[0,0,0,0,0,1,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]])
@@ -661,7 +662,7 @@ print(n)
 #eigenvalue_graph(J,1000,150,n)
 
 #print(len(adiabatic_prob([100],g,n,q=100)[0]))
-prob_problem_1 = adiabatic_prob([36],g,n,q=200)[0]
+prob_problem_1 = adiabatic_prob([60],g,n,q=200)[0]
 
 print(prob_problem_1[-1])
 

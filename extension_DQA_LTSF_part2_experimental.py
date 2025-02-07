@@ -686,7 +686,7 @@ def read_matrix(read_degenerate):
 
 
 #test case ----
-n = 8
+n = 9
 # G = generate_adjacency_matrix(n)
 # h_G = h_z(G,n,R=1)
 # print(check_solution_degeneracy(n,G,h_G))
@@ -696,7 +696,7 @@ n = 8
 M = read_matrix(read_degenerate=False)
 
 h_sample = h_z(M,n,R=1)
-target_qubit = 9
+target_qubit = 1
 #visualize_graph(M)
 
 # print(np.shape(Classical_H_ising(n,M,h_sample)))
@@ -705,8 +705,8 @@ target_qubit = 9
 
 
 
-diabatic_test_eigenspectrum(target_qubit,50,M,n,h_sample,r=1)
-diabatic_evolution_probability_plot(target_qubit,36,M,n,h_sample,r=1)
+#diabatic_test_eigenspectrum(target_qubit,50,M,n,h_sample,r=1)
+diabatic_evolution_probability_plot(target_qubit,50,M,n,h_sample,r=1)
 
 
 
