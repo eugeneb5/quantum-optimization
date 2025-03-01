@@ -8,7 +8,11 @@ import matplotlib.pyplot as plt
 import networkx as nx
 
 
+from tqdm import tqdm
+import time
 
+for i in tqdm(range(1)):
+    time.sleep(0.5)
 
 
 
@@ -168,17 +172,17 @@ def problem_hamiltonian(t,t_max,target_qubit,n,J,s_x=0.2):
 
     h = 1e9*np.array([1,-0.32610452,0.16998698,-0.12109217,-0.58725647,0.19980255,-0.4370849])
 
-    print("check")
+    
 
     #for the first part of hamiltonian
     for i in range(1,n+1):
-        print("check loop")
+        #print("check loop")
         if target_qubit == i:
-            print("target_qubit yes")
+            #print("target_qubit yes")
             final_h += b_coefficients_true(t,t_max,s_x)*h[i-1]*sigma_z(n,i)
         else:
             final_h += b_coefficients_false(t,t_max,s_x)*h[i-1]*sigma_z(n,i)
-            print("NO!")
+            #print("NO!")
     for k in range(1,n+1):
 
         

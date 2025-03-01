@@ -7,6 +7,9 @@ from scipy.sparse.linalg import eigsh   #for larger matrices!
 import matplotlib.pyplot as plt
 import networkx as nx
 import os
+import time
+from concurrent.futures import ProcessPoolExecutor
+from tqdm import tqdm
 
 
 
@@ -343,9 +346,9 @@ def is_hermitian(H, tol=1e-10):
 # h = h_z(J,n,R=1)
 
 
-H = Classical_H_ising(n,J,h)
+# H = Classical_H_ising(n,J,h)
 
-index = Ising_search(H)
+# index = Ising_search(H)
 
 #print("ground state eigenvalue index: "+str(index))
 
@@ -466,7 +469,7 @@ def diabatic_evolution_test_probability(initial_eigenvector,comparison_vector,ta
 #DONT USE THIS FUNCTION ANYMORE!!
 
 
-def diabatic_test_eigenspectrum(target_qubit,t_max,J,n,h_sample,q=100,r = 1e9, energy_difference = True):   
+def diabatic_test_eigenspectrum(target_qubit,t_max,J,n,h_sample,q=100,r = 1, energy_difference = True):     #change r to 1e9 
 
     dt = t_max/q
 
@@ -490,17 +493,28 @@ def diabatic_test_eigenspectrum(target_qubit,t_max,J,n,h_sample,q=100,r = 1e9, e
         min_diff_eig_3[i] = eigenvalues[3] - eigenvalues[0]
     print(ground_eig[q])
     x_val = np.linspace(0,1,q+1)
+    zeros = np.zeros(q+1)
 
     if energy_difference == True:
+        plt.title("Eigenvalue difference for annealing with target qubit " + str(target_qubit))
+        plt.xlabel("Time parameter s")
+        plt.ylabel("Energy difference")
+        plt.yticks([0,0.5])
         plt.plot(x_val, min_diff_eig_1, label = "first minimum difference")
         plt.plot(x_val, min_diff_eig_2, label = "second minimum difference")
-        plt.plot(x_val, min_diff_eig_3)
+        #plt.plot(x_val, min_diff_eig_3)
+        plt.plot()
+        plt.plot(x_val,zeros, linestyle = "--", color = "blue")
 
     else:
+        plt.title("Hamiltonian eigenvalue spectrum for target qubit " +str(target_qubit))
         plt.plot(x_val,ground_eig, label= "ground state energy")
         plt.plot(x_val, first_eig, label = "first excited state energy")
         plt.plot(x_val,second_eig, label= "second excited state energy")
-
+        plt.yticks([-5])
+        
+        
+    plt.xticks([0,0.5,1])
     plt.legend()
     plt.show()
 
@@ -517,11 +531,13 @@ def diabatic_test_eigenspectrum(target_qubit,t_max,J,n,h_sample,q=100,r = 1e9, e
 
 
 #this function is self contained!
-def diabatic_evolution_probability_plot(target_qubit, t_max, J, n, h_sample,q=100, test_superposition_state = False,test_excited_state = False, r = 1e9):   
+def diabatic_evolution_probability_plot(target_qubit, t_max, J, n, h_sample,q=100, test_superposition_state = False,test_excited_state = False, r = 1):   #change r to 1e9!
 
     #find the initial state
 
-    
+    num_steps = q+1
+    progress_bar = tqdm(total=num_steps, desc="Computing Eigenspectrum", position=0)
+
 
     initial_p_h = problem_hamiltonian(0,t_max,target_qubit,n,J,h_sample)
 
@@ -567,35 +583,43 @@ def diabatic_evolution_probability_plot(target_qubit, t_max, J, n, h_sample,q=10
        
         values[i] = probability
 
-    x_val = np.linspace(0,1,q+1)
+        progress_bar.update(1)
 
+    x_val = np.linspace(0,1,q+1)
+    p_f_line = np.zeros(q+1)
+    for i in range(q+1):
+        p_f_line[i]=0.99
     plt.plot(x_val, values)
-    plt.title("Probability curve through the annealing for target qubit "+str(target_qubit))
-    plt.xlabel("s")
-    plt.ylabel("Probability")
+    plt.plot(x_val, p_f_line, linestyle = "--")
+    plt.title("Diabatic Annealing Probability curve for target qubit "+str(target_qubit)+", T = "+str(t_max)+" s")
+    plt.xlabel("Time parameter, S")
+    plt.ylabel("Success Probability")
+    plt.xticks([0,0.5,1])
+    plt.yticks([0,0.5,1])
     plt.show()
     print("for target qubit set to "+ str(target_qubit)+" we get final probability of "+str(values[q]))
+    progress_bar.close()
 
-    
+
 
 
 #TEST CASE -----------------------------------------
 
-# target_qubit = 3
-# t_max = 45
+target_qubit = 3
+t_max = 45
 
 # J = np.array([[0,0,1,1,0,1,1],[0,0,0,0,1,0,0],[0,0,0,1,1,0,1],[0,0,0,0,0,0,1],[0,0,0,0,0,1,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]])
 # n = 7
 # h = h_z(J,n,R=1)
 
-# J = np.array([[0,0,1,1,0,1,1],[0,0,0,0,1,0,0],[0,0,0,1,1,0,1],[0,0,0,0,0,0,1],[0,0,0,0,0,1,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]])
-# n = 7
-# h = np.array([1,-0.32610452,0.16998698,-0.12109217,-0.58725647,0.19980255,-0.4370849])
+J = np.array([[0,0,1,1,0,1,1],[0,0,0,0,1,0,0],[0,0,0,1,1,0,1],[0,0,0,0,0,0,1],[0,0,0,0,0,1,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]])
+n = 7
+h = np.array([1,-0.32610452,0.16998698,-0.12109217,-0.58725647,0.19980255,-0.4370849])
 # #h = h_z(J,n)
 
 # print(check_solution_degeneracy(n,J,h))
-# diabatic_test_eigenspectrum(target_qubit, t_max, J, n, h, r=1)
-# diabatic_evolution_probability_plot(target_qubit,t_max,J,n,h,test_superposition_state=False,r = 1)
+#diabatic_test_eigenspectrum(target_qubit, t_max, J, n, h, r=1, energy_difference=True)
+#diabatic_evolution_probability_plot(target_qubit,t_max,J,n,h,test_superposition_state=False,r = 1)
 
 
 
@@ -666,7 +690,6 @@ def save_matrix(n,G,h_G, rewrite = False):
                     f.write(row_str + '\n')
         
 
-
 def read_matrix(read_degenerate):
 
     matrix = []
@@ -682,43 +705,135 @@ def read_matrix(read_degenerate):
             matrix.append(row)
     return np.array(matrix)
 
+### for timing the functions- useful for larger functions
+def timed_function(func, *args):
+    """Wrapper to time function execution"""
+    start_time = time.time()
+    result = func(*args)
+    elapsed_time = time.time() - start_time
+    return f"{func.__name__} completed in {elapsed_time:.2f} seconds - Result: {result}"
+
+def unpack_and_run(f):
+
+    return timed_function(*f)
 
 
 
 #test case ----
-n = 9
+#n = 9
 # G = generate_adjacency_matrix(n)
 # h_G = h_z(G,n,R=1)
 # print(check_solution_degeneracy(n,G,h_G))
 # save_matrix(n,G,h_G, rewrite = True)
 
 
-M = read_matrix(read_degenerate=False)
 
-h_sample = h_z(M,n,R=1)
-target_qubit = 1
+
+if __name__ == "__main__":
+    n=9
+    M = read_matrix(read_degenerate=False)
+
+    h_sample = h_z(M,n,R=1)
+    target_qubit = 1
+    
+
 #visualize_graph(M)
 
 # print(np.shape(Classical_H_ising(n,M,h_sample)))
 # print(check_solution_degeneracy(n,M,h_sample))
 
+    functions = [
+        (diabatic_test_eigenspectrum, target_qubit,50, M, n, h_sample),
+        (diabatic_evolution_probability_plot, target_qubit, 50,M, n, h_sample)
+    ]
+
+    with ProcessPoolExecutor(max_workers=2) as executor:
+        results = list(tqdm(executor.map(unpack_and_run, functions), total=len(functions), desc="Processing"))
+
+# diabatic_test_eigenspectrum(target_qubit,50,M,n,h_sample,r=1)
+# diabatic_evolution_probability_plot(target_qubit,50,M,n,h_sample,r=1)
+
+    for res in results:
+        print(res)
 
 
 
-#diabatic_test_eigenspectrum(target_qubit,50,M,n,h_sample,r=1)
-diabatic_evolution_probability_plot(target_qubit,50,M,n,h_sample,r=1)
+
+
+
+
+
+#Annealing Schedule Demonstrations------------------
+
+def annealing_schedules(t_max,s_x, a =True):
+
+    
+
+    #t = np.linspace(0,t_max,t_max+1)
+
+    x_val = np.linspace(0,1,t_max+1)
+
+    s_x_array = np.zeros(t_max+1)
+
+    for i in range(t_max+1):
+
+        s_x_array[i] = s_x
+
+    y_val = np.linspace(0,1,t_max+1)
+    
+    if a:
+
+        a_false = np.zeros(t_max+1)
+        a_true = np.zeros(t_max+1)
+        for i in range(t_max+1):
+
+            a_false[i] = a_coefficients_false(i,t_max,s_x)
+            a_true[i] = a_coefficients_true(i,t_max, s_x)
+
+
+        plt.plot(x_val, a_false)
+
+        plt.plot(x_val, a_true)
+
+        
+       
+      
+
+        
+
+        
+    else:
+
+        b_false = np.zeros(t_max+1)
+        b_true = np.zeros(t_max+1)
+        
+        for i in range(t_max+1):
+
+            b_false[i] = b_coefficients_false(i,t_max,s_x)
+            b_true[i] = b_coefficients_true(i,t_max,s_x)
+
+        y_val = np.linspace(b_true[0],1,t_max+1)
+        #plt.plot(x_val, b_false)
+        plt.plot(x_val,b_true)
+        #plt.title("for b")
+       
+    plt.plot(s_x_array, y_val, linestyle = "--")
+    plt.xticks([0,0.5,1])
+    plt.yticks([0,0.5,1])
+    plt.xlabel("Time Parameter, S")
+    
+    plt.show()
+
+
+
+#annealing_schedules(45,0.2,a=False)
 
 
 
 
 
 
-
-
-
-
-
-
+#idea!! do comparisons between AQA (maybe use a schedule dependent on the energy gap for better prob!) and DQA, dependent on the problem's gap size - which we can alter ourselves!!, we know roughly how to do this!!
 
 
 

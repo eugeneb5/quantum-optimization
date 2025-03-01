@@ -1,8 +1,9 @@
 import numpy as np 
 #import sympy as sp
 from functools import reduce
-from scipy.linalg import expm
+from scipy.linalg import logm, expm
 from scipy.linalg import eigh
+#from scipy.linalg import eigvals
 
 import matplotlib.pyplot as plt
 
@@ -65,7 +66,7 @@ def H_ising(n,M,kappa):
 
         h[k] = total + kappa
 
-    #h = np.array([1,-0.32610452,0.16998698,-0.12109217,-0.58725647,0.19980255,-0.4370849])
+    h = np.array([1,-0.32610452,0.16998698,-0.12109217,-0.58725647,0.19980255,-0.4370849])
     
     #to find H_ising now
     H = np.zeros((2**n,2**n))
@@ -365,28 +366,33 @@ def plot_prob(vals_1, vals_2, t_max, numbers):   #vals_1 and vals_2 have to be t
 
         tau = t_max[j_index]
        
-        plt.plot(x_1,j, label = f" $\\tau = {tau}$")
+        plt.plot(x_1,j, label = "T = "+str(tau)+ " s")
 
     
     for k_index, k in enumerate(vals_2):
 
         tau = numbers[k_index]
-        plt.plot(x_2,k, label = f"$\\tau = {tau}$", linestyle = "--") 
+        plt.plot(x_2,k, label = "T = "+str(tau)+ " s") 
 
 
+    p_f_line = np.zeros(len(vals_1[0]))
+
+    for i in range(len(vals_1[0])):
+        p_f_line[i] = 0.99
         
-    plt.ylabel("Success Probability", fontsize = 20)
+    plt.ylabel("Success Probability")
+    plt.plot(x_1, p_f_line, linestyle = "--")
+    plt.xlabel("Time Parameter, S")
 
-    plt.xlabel(r"$(t/\tau)$", fontsize = 15)
-
-    plt.legend(fontsize = 15)
-
-    plt.yticks(fontsize = 15)
-    plt.xticks(fontsize = 15)
+    plt.legend()
+    plt.title("Adiabatic Annealing probability curve of various T")
+    
+    plt.yticks([0,0.5,1])
+    plt.xticks([0,0.5,1])
 
     plt.show()
 
-def plot_single_probability_graph(val):
+def plot_single_probability_graph(val): 
 
     n = len(val)
 
@@ -616,9 +622,14 @@ def eigenvalue_graph(M,t_max,q,n):
     
     #plt.plot(x_val, eigenvalue_difference, linestyle = "--", label = "ground and excited minimum")
     #plt.plot(x_val, eigenvalue_diff_2, label = "first and second excited difference")
+    plt.title("Example problem Hamiltonian eigenvalue Spectrum")
     plt.plot(x_val,eigenvalues_set[:,0], label= "ground state energy")
     plt.plot(x_val, eigenvalues_set[:,1], label = "first excited state energy")
     plt.plot(x_val,eigenvalues_set[:,2], label= "second excited state energy")
+    plt.xlabel("Time parameter , s")
+    plt.ylabel("Energy eigenvalue")
+    plt.xticks([0,0.5,1])
+    plt.yticks([-5,-6,-7])
     #plt.plot(x_val, eigenvalues_set[:,3], label = "third excited state energy")
     #plt.scatter(x_val[-1], actual_eigenvalue_ground, label = "true ground state eigenvalue", s = 10, color = 'red')
     plt.legend()
@@ -647,26 +658,31 @@ def read_matrix(read_degenerate):
 
 
 
-g = read_matrix(read_degenerate=False)
+# g = read_matrix(read_degenerate=False)
 
-n = len(g)
-print(n)
+# n = len(g)
+# print(n)
 #print(g)
 
 
 #eigenvalue_graph(g,1000,150,n)
 
-# J =np.array([[0,0,1,1,0,1,1],[0,0,0,0,1,0,0],[0,0,0,1,1,0,1],[0,0,0,0,0,0,1],[0,0,0,0,0,1,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]])
+J =np.array([[0,0,1,1,0,1,1],[0,0,0,0,1,0,0],[0,0,0,1,1,0,1],[0,0,0,0,0,0,1],[0,0,0,0,0,1,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]])
 # #visualize_graph(J)   
+n = 7
 
 #eigenvalue_graph(J,1000,150,n)
 
 #print(len(adiabatic_prob([100],g,n,q=100)[0]))
-prob_problem_1 = adiabatic_prob([60],g,n,q=200)[0]
+#prob_problem_1 = adiabatic_prob([1500],J,n)[0]
 
-print(prob_problem_1[-1])
 
-plot_single_probability_graph(prob_problem_1)
+# print(prob_problem_1[-1])
+
+# plot_single_probability_graph(prob_problem_1)
+
+# t_max = [10,45,100]
+# plot_prob(adiabatic_prob(t_max,J,n),prob_problem_1,t_max,[1500])
 
 #------------------------------------
 
@@ -1105,4 +1121,114 @@ def degenerate_graph_check(M,t_max,q,n,stop_value):
 #def adiabatic_till termination(J, n, dt):
 
 
+
+
+
+#level crossing diagram -------------------------
+
+def function(x, m,c):
+    n = len(x)
+    y = np.zeros(n)
+    for i in range(n):
+        y[i] = m*x[i]+c
+    return y
+
+
+# x_val = np.linspace(0,1,20)
+
+# plt.title("Level Crossing of two qubit spin example")
+# plt.plot(x_val, function(x_val,-1,1),label ="configuration 1")
+# plt.plot(x_val, function(x_val, 1,0), label = "configuration 2")
+# plt.ylabel("Energy")
+# plt.xlabel("frustration parameter")
+# plt.legend()
+# plt.xticks([])
+# plt.yticks([])
+# plt.show()
+
+
+
+
+
+
+
+
+#avoided crossing diagram-------------------
+
+def avoided_crossing(m, P):   #m1=-m2
+
+    n=100
+    x_val = np.linspace(0,1,n)
+
+    E_plus = np.zeros(n)
+    E_minus = np.zeros(n)
+    E1 = np.zeros(n)
+    E2 = np.zeros(n)
+    
+    for i in range(n):
+
+        
+        
+        E_1 = m*x_val[i]
+        E_2 = -m*x_val[i]+m
+
+        E1[i] = E_1
+        E2[i] = E_2
+
+        E_plus[i] = (E_1 +E_2)/2 + (((E_1 -E_2)/2)**2+abs(P)**2)**0.5
+        E_minus[i] = (E_1 +E_2)/2 - (((E_1 -E_2)/2)**2+abs(P)**2)**0.5
+
+    plt.plot(x_val, E_plus, color = "blue", label = "configuration 2")
+    plt.plot(x_val, E_minus, color = "red",label = "configuration 1")
+    plt.plot(x_val, E1, linestyle = "--", color = "red")
+    plt.plot(x_val, E2, linestyle = "--", color = "blue")
+    plt.xticks([0,0.5,1])
+    plt.yticks([0,0.5*m,m])
+    plt.title("Avoided Crossing due to the transverse field")
+    plt.xlabel("Frustration parameter")
+    plt.ylabel("Energy")
+    plt.show()
+
+
+
+#avoided_crossing(1,0.1)
+        
+
+
+
+
+
+####ERROR estimation program for this adiabatic H --------------------------
+
+def max_error_estimation(k,t_max,n,M):
+
+    delta_t = t_max/k
+
+    
+
+    H = np.zeros((2**n,2**n), dtype = complex)
+
+    I = np.eye(2**n, dtype = complex)
+
+    for i in range(0,k+1):  #we want to include k - so will have k+1 total instances!!
+
+        H_instance = Hamiltonian(n,delta_t*i,t_max, M)
+
+        H += H_instance
+
+
+    average_err = (k+1)*(expm(-1j*H*t_max/(k+1)**2)- I + (1j*H*t_max/(k+1)**2))   #double check this - might be - !!
+
+    return np.max(eigh(average_err)[0])  #i.e. finding the maximum expectation value! 
+
+
+
+
+
+#TEST ----------------
+n = 5
+M = np.array([[0,1,1,0,0],[0,0,1,0,1],[0,0,0,1,1],[0,0,0,0,0],[0,0,0,0,0]])
+t_max = 1e-9
+
+print(max_error_estimation(350,t_max,n,M))
 
