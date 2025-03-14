@@ -469,7 +469,7 @@ def diabatic_evolution_test_probability(initial_eigenvector,comparison_vector,ta
 #DONT USE THIS FUNCTION ANYMORE!!
 
 
-def diabatic_test_eigenspectrum(target_qubit,t_max,J,n,h_sample,q=100,r = 1, energy_difference = True):     #change r to 1e9 
+def diabatic_test_eigenspectrum(target_qubit,t_max,J,n,h_sample,q=100,r = 1, energy_difference = False):     #change r to 1e9 
 
     dt = t_max/q
 
