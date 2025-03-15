@@ -425,7 +425,6 @@ def problem_hamiltonian_DQA(t,t_max,target_qubit,n,M,B,J,s_x=0.2):
 
     return  M*I + final_h    #we haven't attached any of the conditions to M*I - since we are assuming it just moves the hamiltonian up and down anyways - so shouldn't affect anything??
         
-        
 def diabatic_evolution_probability_plot(target_qubit, t_max,n, M,B,J,min_index, q=150, test_superposition_state = False,test_excited_state = False):   #change r to 1e9!
 
     #find the initial state
@@ -486,7 +485,6 @@ def diabatic_evolution_probability_plot(target_qubit, t_max,n, M,B,J,min_index, 
     plt.show()
     print("for target qubit set to "+ str(target_qubit)+" we get final probability of "+str(values[q]))
     
-
 def diabatic_test_eigenspectrum(target_qubit,t_max,n,M,B,J,number_of_eigenvalues=4,q=100,r = 1, energy_difference = False):     #change r to 1e9 
 
     dt = t_max/(q)
