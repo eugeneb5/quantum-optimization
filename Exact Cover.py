@@ -426,7 +426,7 @@ def problem_hamiltonian_DQA(t,t_max,target_qubit,n,M,B,J,s_x=0.2):
     return  M*I + final_h    #we haven't attached any of the conditions to M*I - since we are assuming it just moves the hamiltonian up and down anyways - so shouldn't affect anything??
         
         
-def diabatic_evolution_probability_plot(target_qubit, t_max,n, M,B,J,min_index, q=100, test_superposition_state = False,test_excited_state = False):   #change r to 1e9!
+def diabatic_evolution_probability_plot(target_qubit, t_max,n, M,B,J,min_index, q=150, test_superposition_state = False,test_excited_state = False):   #change r to 1e9!
 
     #find the initial state
     # #progress_bar = tqdm(total=num_steps, desc="Computing Eigenspectrum", position=0)
@@ -457,7 +457,7 @@ def diabatic_evolution_probability_plot(target_qubit, t_max,n, M,B,J,min_index, 
 
     #start the annealing process
 
-    dt = t_max/(q+1)
+    dt = t_max/(q)
     values = np.zeros(q+1)  #index from 0 to q array
 
     for i in range(0,q+1):
@@ -489,7 +489,7 @@ def diabatic_evolution_probability_plot(target_qubit, t_max,n, M,B,J,min_index, 
 
 def diabatic_test_eigenspectrum(target_qubit,t_max,n,M,B,J,number_of_eigenvalues=4,q=100,r = 1, energy_difference = False):     #change r to 1e9 
 
-    dt = t_max/(q+1)
+    dt = t_max/(q)
 
     
     eigenvalues_set = np.zeros((q+1, number_of_eigenvalues))
@@ -542,12 +542,12 @@ def diabatic_test_eigenspectrum(target_qubit,t_max,n,M,B,J,number_of_eigenvalues
 
 
 
-n = 8
-target_qubit = 3
+n = 6
+target_qubit = 2
 t_max = 50
-q = 150
+q = 300
 
-M, B, J, min_index = unique_satisfiability_problem_generation(n, ratio = 0.7, USA = False, satisfiability_ratio= True, DQA = True)   #save a problem!!!! and also try change the starting hamiltonian maybe??? adapt it perhaps!? solving the decision problem only requires that the final hamiltonian is 
+# M, B, J, min_index = unique_satisfiability_problem_generation(n, ratio = 0.7, USA = True, satisfiability_ratio= True, DQA = True)   #save a problem!!!! and also try change the starting hamiltonian maybe??? adapt it perhaps!? solving the decision problem only requires that the final hamiltonian is 
 # np.savez("USA_values.npz", integer=M, array_1D=B, array_2D=J, index = min_index)
 # print("saved")
 
@@ -563,10 +563,9 @@ M, B, J, min_index = unique_satisfiability_problem_generation(n, ratio = 0.7, US
 
 # H = problem_hamiltonian(M,B,J,n)
 
-# #Hamiltonian_spectrum(n, t_max, q, H, number_of_eigenvalues = 6)
+# Hamiltonian_spectrum(n, t_max, q, H, number_of_eigenvalues = 6)
 
 # diabatic_test_eigenspectrum(target_qubit,t_max, n, M,B,J, number_of_eigenvalues=4)
-
 
 # diabatic_evolution_probability_plot(target_qubit,t_max,n,M,B,J,min_index, test_excited_state=False)
 
@@ -579,12 +578,92 @@ M, B, J, min_index = unique_satisfiability_problem_generation(n, ratio = 0.7, US
 
 #### ---------------------- implement the E_res function 
 
+def E_res_test(target_qubit,n,M,B,J,t_max,min_index,q=300, save_mode = False):
+
+    initial_p_h = problem_hamiltonian_DQA(0,t_max,target_qubit,n,M,B,J)
+    initial_d_h = driver_hamiltonian_DQA(0,t_max,target_qubit,n,B)
+    initial_hamiltonian = initial_d_h+initial_p_h
+    state = eigh(initial_hamiltonian)[1][:,0]
+    H_problem = problem_hamiltonian(M,B,J,n)
+    file_1 = "E_res_data_test_4.txt"
+    file_2 = "Probability_data_test_4.txt"
+
+    eigenvalues, eigenvectors = eigh(H_problem)
+    E_0 = eigenvalues[0]
+    comparison_vector = np.zeros((2**n))
+    comparison_vector[min_index] = 1
+    #Final_eigenvector = eigenvectors[:,0]
+
+    print("the E_0 reference value is: "+str(E_0))
+    dt = t_max/q
+
+    for i in range(0,q+1):
+
+        Hamiltonian_at_time_instance = problem_hamiltonian_DQA(i*dt,t_max,target_qubit,n,M,B,J)+driver_hamiltonian_DQA(i*dt,t_max,target_qubit,n,B)
+
+        state = np.dot(expm(-1j*dt*Hamiltonian_at_time_instance),state)
+
+    E_final = state@(H_problem@state)
+
+    E_res = abs(E_final - E_0)  #should it be the absolute value?
+
+    print("the E_res value for annealing time, "+str(t_max)+"seconds is: "+str(E_res))
+
+    probability = abs(((np.vdot(state,comparison_vector))))**2
+
+    print("probability of success is: "+str(probability))
+
+    if save_mode:
+        with open(file_1, "a") as f1, open(file_2,"a") as f2:
+            f1.write(f"{E_res}\n")  # Append single value to array1.txt
+            f2.write(f"{probability}\n")
+        print("saved values")
+        
+def Plot_two_variables(filename_1 = "E_res_data_test.txt", filename_2 = "Probability_data_test.txt"):
+
+    def load_array(filename):
+        with open(filename, "r") as f:
+            return np.array([float(line.strip()) for line in f if line.strip()]) 
+        
+    filename_1_x = "E_res_data_test.txt"
+    filename_1_y = "Probability_data_test.txt"
+    filename_2_x = "E_res_data_test_1.txt"
+    filename_2_y = "Probability_data_test_1.txt"
+    filename_3_x = "E_res_data_test_2.txt"
+    filename_3_y = "Probability_data_test_2.txt"
+    filename_4_x = "E_res_data_test_3.txt"
+    filename_4_y = "Probability_data_test_3.txt"
+    filename_5_x = "E_res_data_test_4.txt"
+    filename_5_y = "Probability_data_test_4.txt"
+
+    array_1_x = load_array(filename_1_x)
+    array_1_y = load_array(filename_1_y)
+    array_2_x = load_array(filename_2_x)
+    array_2_y = load_array(filename_2_y)
+    array_3_x = load_array(filename_3_x)
+    array_3_y = load_array(filename_3_y)
+    array_4_x = load_array(filename_4_x)
+    array_4_y = load_array(filename_4_y)
+    array_5_x = load_array(filename_5_x)
+    array_5_y = load_array(filename_5_y)
+
+    measure_from_value = 0
+
+    plt.scatter(array_1_x[measure_from_value:], array_1_y[measure_from_value:],s=10,label = "n=8")
+    plt.scatter(array_2_x[measure_from_value:], array_2_y[measure_from_value:],s=10, label = "n=7")
+    plt.scatter(array_3_x[measure_from_value:], array_3_y[measure_from_value:],s=10, label = "n=6" )
+    plt.scatter(array_4_x[measure_from_value:], array_4_y[measure_from_value:],s=10, label = "n=5")
+    plt.scatter(array_5_x[measure_from_value:], array_5_y[measure_from_value:],s=10, label = "n=6 several problems")
+    plt.gca().invert_xaxis()
+    plt.legend()
+    plt.show()
+
 def E_res_DQA(target_qubit,n,M,B,J, t_max_starting_value,t_max_step, save = False, q= 150):  
 
     #initialize the state
 
-    initial_p_h = problem_hamiltonian_DQA(0,t_max,target_qubit,n,M,B,J)
-    initial_d_h = driver_hamiltonian_DQA(0,t_max,target_qubit,n,B)
+    initial_p_h = problem_hamiltonian_DQA(0,t_max_starting_value,target_qubit,n,M,B,J)
+    initial_d_h = driver_hamiltonian_DQA(0,t_max_starting_value,target_qubit,n,B)
     initial_hamiltonian = initial_d_h+initial_p_h
     ground_state_eigenvector = eigh(initial_hamiltonian)[1][:,0]
     H_problem = problem_hamiltonian(M,B,J,n)    
@@ -592,15 +671,24 @@ def E_res_DQA(target_qubit,n,M,B,J, t_max_starting_value,t_max_step, save = Fals
 
     #find E_0
 
-    E_0 = eigh(H)[0][0]  #should be minimum value
+    E_0 = eigh(H_problem)[0][0]  #should be minimum value
     print(E_0)
 
 
     #check for minimum gap size first
-    #does gap size change with t_max??
+    #does gap size change with t_max??  NO, it doesn't change so can check min_gap
 
+    dt = t_max_starting_value/(q)
+    eigenvalue_difference = np.zeros(q+1)
     
 
+    for i in range(0,q+1):
+         h = Time_dependent_Hamiltonian(n,dt*i,t_max_starting_value,H_problem)
+         instantaneous_eigenvalues_set = eigh(h)[0]
+         eigenvalue_difference[i] = abs(instantaneous_eigenvalues_set[1]-instantaneous_eigenvalues_set[0])
+    
+    minimum_gap_size = np.min(eigenvalue_difference)
+    print(minimum_gap_size)
 
     #initialize annealing:
     not_found = True
@@ -609,7 +697,7 @@ def E_res_DQA(target_qubit,n,M,B,J, t_max_starting_value,t_max_step, save = Fals
 
     while not_found:
 
-        dt = t_max/(q+1)
+        dt = t_max/(q)
         state = ground_state_eigenvector
         for i in range(0,q+1):
 
@@ -632,12 +720,31 @@ def E_res_DQA(target_qubit,n,M,B,J, t_max_starting_value,t_max_step, save = Fals
             continue
 
 
+    return minimum_gap_size, E_res
+
+
+
+t_max_step = 1
+
+### for generating values
+
+# value_range = np.linspace(1,50,num=50)
+# for t_m in value_range:
+#     print("testing t_max value of: "+str(t_m))
+#     E_res_test(target_qubit,n,M,B,J,t_m,min_index,save_mode=True)
+# Plot_two_variables(filename_1="E_res_data_test_4.txt",filename_2="Probability_data_test_4.txt")
+
+Plot_two_variables()
 
 
 
 
+#E_res_test(target_qubit,n,M,B,J,t_max,min_index, save_mode=True)
 
+# min_gap_size, E_res = E_res_DQA(target_qubit,n,M,B,J,t_max,t_max_step)
 
+# print(min_gap_size)
+# print(E_res)
 
 
 
