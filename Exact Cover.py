@@ -756,6 +756,7 @@ def E_res_DQA(E_res_threshold,target_qubit,n,M,B,J, t_max_starting_value,t_max_s
 
     #find E_0
 
+
     E_0 = eigh(H_problem)[0][0]  #should be minimum value
     print(E_0)
 
@@ -780,6 +781,12 @@ def E_res_DQA(E_res_threshold,target_qubit,n,M,B,J, t_max_starting_value,t_max_s
 
     t_max = t_max_starting_value
 
+    previous_value  = 10000
+    previous_t_max = 1
+    bisection = False
+    pp_t_max = 1
+    difference_E_res = 0
+
     while not_found:
 
         dt = t_max/(q)
@@ -796,49 +803,67 @@ def E_res_DQA(E_res_threshold,target_qubit,n,M,B,J, t_max_starting_value,t_max_s
 
         print("testing for t_max, "+str(t_max)+", gives E_res of: "+str(E_res))
 
-        if np.isclose(E_res,E_res_threshold, atol = round_to_1_sf(E_res_threshold)/10):   #how accurate could we get it?
+        
+
+        if np.isclose(E_res,E_res_threshold, rtol = 0.001):   #how accurate could we get it?
 
             print("the critical t_max value is: "+str(t_max)+" with residual energy of: "+str(E_res))
             print("the corresponding minimum gap size is "+str(minimum_gap_size))
             not_found = False
             continue
 
-        elif np.isclose(E_res, E_res_threshold, atol = round_to_1_sf(E_res_threshold)):
 
-            delta = (E_res - E_res_threshold) 
-
-            if delta <0:
-                print("overshot slightly")
-                t_max -= 0.4*t_max_step
-            elif delta>0:
-                print("undershooting slightly")
-                t_max += 0.5*t_max_step
-            continue
-        elif np.isclose(E_res, E_res_threshold, atol = round_to_1_sf(E_res_threshold)/5):
-
-            delta = (E_res - E_res_threshold) 
-
-            if delta <0:
-                print("overshot very slightly")
-                t_max -= 0.09*t_max_step
-            elif delta>0:
-                print("undershooting very slightly")
-                t_max += 0.1*t_max_step
-            continue
-
-        elif E_res > 10*E_res_threshold:   #do we try factor of 10 or 100?
+        elif E_res > 7.5*E_res_threshold and not bisection:   #do we try factor of 10 or 100?
             print("still far")
+            pp_t_max = previous_t_max
+            previous_value = E_res
+            print("updated prev: "+str(previous_value))
+            previous_t_max = t_max
             t_max += 10*t_max_step
+            print("new t_max value is " +str(t_max))
             continue
-        elif E_res > E_res_threshold:
+
+        elif E_res > E_res_threshold and not bisection:
+            pp_t_max = previous_t_max
+            previous_value = E_res
+            print("updated prev: "+str(previous_value))
+            previous_t_max = t_max
             print("getting close")
             t_max += 2*t_max_step
+            print("new t_max value is " +str(t_max))
+            continue
+        
+        
+        
+        elif E_res-E_res_threshold <0 and not bisection:   #i.e. sign change detected since overstepped FIRST TIME !
+            print("entering bisection period")
+            difference_E_res = E_res - E_res_threshold
+            pp_t_max = previous_t_max
+            t_max_holder = t_max   #save current t_max before updating it
+            t_max = (previous_t_max+t_max)/2
+            previous_t_max = t_max_holder #then update prev_t_max once new t_max has been calculated
+            previous_value = E_res
+            bisection = True
+            
+            continue
+    
+
+        elif bisection and (E_res - E_res_threshold )*difference_E_res<0:
+            difference_E_res = E_res - E_res_threshold
+            pp_t_max = previous_t_max
+            t_max_holder = t_max
+            t_max = (previous_t_max+t_max)/2
+            previous_t_max = t_max_holder
+            continue
+        elif bisection and (E_res - E_res_threshold)*difference_E_res >0:
+            difference_E_res = E_res - E_res_threshold
+            
+            previous_t_max = t_max
+            t_max = (pp_t_max+t_max)/2
+            
             continue
 
-        elif E_res < E_res_threshold:
-            print("overshot, going back")
-            t_max -= t_max_step
-            continue
+        
     if save_mode:
         with open(file_1, "a") as f1, open(file_2,"a") as f2:
             f1.write(f"{minimum_gap_size}\n")  # Append single value to array1.txt
@@ -913,103 +938,109 @@ def E_res_test_adiabatic(n,M,B,J,t_max,num,min_index,q=400,save_mode = False):
 
 ######for calculating E residual threshold...
 
-Plot_two_variables(filename_1="E_res_data_test_4.txt",filename_2="Probability_data_test_4.txt")
-polycoeff_array, m_uncert, c_uncert = Plot_two_variables()
 
-print(polycoeff_array) # first is gradient, second is intercept
-m = polycoeff_array[0]  #m is negative
-c = polycoeff_array[1]  
+# polycoeff_array, m_uncert, c_uncert = Plot_two_variables()
 
-#uncertainties are given >0:
+# print(polycoeff_array) # first is gradient, second is intercept
+# m = polycoeff_array[0]  #m is negative
+# c = polycoeff_array[1]  
 
-m_shallower = m+ m_uncert
-m_steeper = m - m_uncert
+# #uncertainties are given >0:
 
-c_lower = c - c_uncert
-c_upper = c+c_uncert
+# m_shallower = m+ m_uncert
+# m_steeper = m - m_uncert
 
-
-
-threshold_E_res = (0.99-c)/m  # we want the one 
-
-threshold_E_res_upper_value = (0.99-c_upper)/m_shallower
-threshold_E_res_lower_value = (0.99-c_lower)/m_steeper
+# c_lower = c - c_uncert
+# c_upper = c+c_uncert
 
 
-print("mean value: "+str(threshold_E_res))  #we are using this new value now!
 
-print("upper limit: "+str(threshold_E_res_upper_value))
-print("lower limit: "+str(threshold_E_res_lower_value))
+# threshold_E_res = (0.99-c)/m  # we want the one 
+
+# threshold_E_res_upper_value = (0.99-c_upper)/m_shallower
+# threshold_E_res_lower_value = (0.99-c_lower)/m_steeper
 
 
+# print("mean value: "+str(threshold_E_res))  #we are using this new value now!
+
+# print("upper limit: "+str(threshold_E_res_upper_value))
+# print("lower limit: "+str(threshold_E_res_lower_value))
+
+# threshold_E_res_lower_value = 0.009650497725576529
+# threshold_E_res_upper_value = 0.01119135713847231
 
 ############--------------------------------------------------------------------------
-# t_max_starting_value = 10
-# t_max_step = 1
-# threshold_E_res = 0.010398576840482203
-# n = 8
-# target_qubit_range = np.linspace(1,n,n,dtype = int)
-# print(target_qubit_range)
-# t_max_test = 100
-# q = 400
+t_max_starting_value = 10
+t_max_step = 1
+threshold_E_res = 0.0104
+threshold_E_res_upper_value = 0.0112
+threshold_E_res_lower_value = 0.0097  #these values are fixed/ rounded
 
 
-# M, B, J, min_index = unique_satisfiability_problem_generation(n, ratio = 0.7, USA = True, satisfiability_ratio= True, DQA = True)
-
-# print("generated random problem")
-
-# H = problem_hamiltonian(M,B,J,n)
-
-# # Hamiltonian_spectrum(n, t_max, q, H, number_of_eigenvalues = 6)
-
-# ######----------------------checking degeneracy
-
-# eigenvalues = eigh(H)[0]
-
-# min_eigenvalue = np.min(eigenvalues)
-
-# degeneracy = 0
-
-# for i in eigenvalues:
-
-#     if i == min_eigenvalue:
-#         degeneracy += 1
+n = 6
+target_qubit_range = np.linspace(1,n,n,dtype = int)
+print(target_qubit_range)
+t_max_test = 100
+q = 400
 
 
-# print("random problem degeneracy is "+str(degeneracy))
+M, B, J, min_index = unique_satisfiability_problem_generation(n, ratio = 0.7, USA = True, satisfiability_ratio= True, DQA = True)
+np.savez("USA_values.npz", integer=M, array_1D=B, array_2D=J, index = min_index)
+
+print("generated random problem")
+
+H = problem_hamiltonian(M,B,J,n)
+
+# Hamiltonian_spectrum(n, t_max, q, H, number_of_eigenvalues = 6)
+
+######----------------------checking degeneracy
+
+eigenvalues = eigh(H)[0]
+
+min_eigenvalue = np.min(eigenvalues)
+
+degeneracy = 0
+
+for i in eigenvalues:
+
+    if i == min_eigenvalue:
+        degeneracy += 1
 
 
-# ####-----------------------------------------------find successful target_qubit
+print("random problem degeneracy is "+str(degeneracy))
 
 
-# incompatible_problem= True
-# index_target_qubit = 0
-
-# while incompatible_problem:
-#     if index_target_qubit > n:
-#         print("unsuccessful problem, quitting program")
-#         sys.exit()
-#     target_qubit = target_qubit_range[index_target_qubit]
-#     print("testing with qubit "+str(target_qubit))
-#     final_probability = diabatic_evolution_probability_plot(target_qubit, t_max_test, n,M,B,J,min_index, plot_mode = False)
-#     if final_probability > 1/(degeneracy+1) or np.isclose(final_probability, (1/(degeneracy+1))):
-
-#         print("found successful problem with target qubit "+str(target_qubit))
-
-#         incompatible_problem = False
-#         continue
-#     else:
-#         index_target_qubit += 1
-
-# ###------------------------------------------now find optimal t_max
+####-----------------------------------------------find successful target_qubit
 
 
+incompatible_problem= True
+index_target_qubit = 0
 
-# target_qubit = target_qubit_range[index_target_qubit]
-# diabatic_test_eigenspectrum(target_qubit,t_max_test,n,M,B,J,number_of_eigenvalues=6,q=q)
+while incompatible_problem:
+    if index_target_qubit > n:
+        print("unsuccessful problem, quitting program")
+        sys.exit()
+    target_qubit = target_qubit_range[index_target_qubit]
+    print("testing with qubit "+str(target_qubit))
+    final_probability = diabatic_evolution_probability_plot(target_qubit, t_max_test, n,M,B,J,min_index, plot_mode = False)
+    if final_probability > 1/(degeneracy+1) or np.isclose(final_probability, (1/(degeneracy+1))):
 
-# print("now finding optimal t_max for threshold E_res")
-# E_res_DQA(threshold_E_res,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode= False)
+        print("found successful problem with target qubit "+str(target_qubit))
+
+        incompatible_problem = False
+        continue
+    else:
+        index_target_qubit += 1
+
+###------------------------------------------now find optimal t_max
+
+
+
+target_qubit = target_qubit_range[index_target_qubit]
+diabatic_test_eigenspectrum(target_qubit,t_max_test,n,M,B,J,number_of_eigenvalues=6,q=q)
+
+print("now finding optimal t_max for threshold E_res")
+E_res_DQA(threshold_E_res,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode= False)
 
 
 
