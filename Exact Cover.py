@@ -876,7 +876,7 @@ def E_res_DQA(E_res_threshold,target_qubit,n,M,B,J, t_max_starting_value,t_max_s
     if save_mode:
         with open(file_1, "a") as f1, open(file_2,"a") as f2:
             f1.write(f"{minimum_gap_size}\n")  # Append single value to array1.txt
-            f2.write(f"{E_res}\n")
+            f2.write(f"{t_max}\n")
         print("saved values")
 
 
@@ -1007,7 +1007,7 @@ threshold_E_res_upper_value = 0.0112
 threshold_E_res_lower_value = 0.0097  #these values are fixed/ rounded
 
 
-n = 6
+n = 7
 target_qubit_range = np.linspace(1,n,n,dtype = int)
 print(target_qubit_range)
 t_max_test = 100
@@ -1027,7 +1027,7 @@ print("generated random problem")
 
 H = problem_hamiltonian(M,B,J,n)
 
-Hamiltonian_spectrum(n, t_max, q, H, number_of_eigenvalues = 6)
+# Hamiltonian_spectrum(n, t_max, q, H, number_of_eigenvalues = 6)
 
 ######----------------------checking degeneracy
 
@@ -1077,24 +1077,24 @@ while incompatible_problem:
 
 
 target_qubit = target_qubit_range[index_target_qubit]
-diabatic_test_eigenspectrum(target_qubit,t_max_test,n,M,B,J,number_of_eigenvalues=6,q=q)
+# diabatic_test_eigenspectrum(target_qubit,t_max_test,n,M,B,J,number_of_eigenvalues=6,q=q)
 
 print("now finding optimal t_max for threshold E_res")
-_,_, optimal_t_max = E_res_DQA(threshold_E_res,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode= False)
+_,_, optimal_t_max = E_res_DQA(threshold_E_res,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode= True)
 
 #for upperbound now
 print("doing the upper bound calculation")
 
 t_max_starting_value = round(optimal_t_max) + 5
 
-E_res_DQA(threshold_E_res_upper_value,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode= False,save_upper=True)
+E_res_DQA(threshold_E_res_upper_value,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode= True,save_upper=True)
 
 #for lower bound
 print("doing lower bound now")
 
 t_max_starting_value = round(optimal_t_max) - 5
 
-E_res_DQA(threshold_E_res_lower_value,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode= False,save_lower=True)
+E_res_DQA(threshold_E_res_lower_value,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode= True,save_lower=True)
 
 
 
