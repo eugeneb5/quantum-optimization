@@ -12,6 +12,7 @@ from concurrent.futures import ProcessPoolExecutor
 from tqdm import tqdm
 from scipy.optimize import curve_fit
 import math
+import sys
 
 
 
@@ -452,7 +453,7 @@ def problem_hamiltonian_DQA(t,t_max,target_qubit,n,M,B,J,s_x=0.2):
 
     return  M*I + final_h    #we haven't attached any of the conditions to M*I - since we are assuming it just moves the hamiltonian up and down anyways - so shouldn't affect anything??
         
-def diabatic_evolution_probability_plot(target_qubit, t_max,n, M,B,J,min_index, q=150, test_superposition_state = False,test_excited_state = False):   #change r to 1e9!
+def diabatic_evolution_probability_plot(target_qubit, t_max,n, M,B,J,min_index, q=150, test_superposition_state = False,test_excited_state = False,plot_mode = True):   #change r to 1e9!
 
     #find the initial state
     # #progress_bar = tqdm(total=num_steps, desc="Computing Eigenspectrum", position=0)
@@ -502,15 +503,18 @@ def diabatic_evolution_probability_plot(target_qubit, t_max,n, M,B,J,min_index, 
     p_f_line = np.zeros(q+1)
     for i in range(q+1):
         p_f_line[i]=0.99
-    plt.plot(x_val, values)
-    plt.plot(x_val, p_f_line, linestyle = "--")
-    plt.title("Diabatic Annealing Probability curve for target qubit "+str(target_qubit)+", T = "+str(t_max)+" s")
-    plt.xlabel("Time parameter, S")
-    plt.ylabel("Success Probability")
-    plt.xticks([0,0.5,1])
-    plt.yticks([0,0.5,1])
-    plt.show()
-    print("for target qubit set to "+ str(target_qubit)+" we get final probability of "+str(values[q]))
+    if plot_mode:
+        plt.plot(x_val, values)
+        plt.plot(x_val, p_f_line, linestyle = "--")
+        plt.title("Diabatic Annealing Probability curve for target qubit "+str(target_qubit)+", T = "+str(t_max)+" s")
+        plt.xlabel("Time parameter, S")
+        plt.ylabel("Success Probability")
+        plt.xticks([0,0.5,1])
+        plt.yticks([0,0.5,1])
+        plt.show()
+        print("for target qubit set to "+ str(target_qubit)+" we get final probability of "+str(values[q]))
+    else:
+        return values[q]   #this is the final probability
     
 def diabatic_test_eigenspectrum(target_qubit,t_max,n,M,B,J,number_of_eigenvalues=4,q=100,r = 1, energy_difference = False):     #change r to 1e9 
 
@@ -569,8 +573,8 @@ def diabatic_test_eigenspectrum(target_qubit,t_max,n,M,B,J,number_of_eigenvalues
 
 n = 7
 target_qubit = 5
-t_max = 150
-q = 250
+t_max = 40
+q = 150
 
 # M, B, J, min_index = unique_satisfiability_problem_generation(n, ratio = 0.7, USA = True, satisfiability_ratio= True, DQA = True)   #save a problem!!!! and also try change the starting hamiltonian maybe??? adapt it perhaps!? solving the decision problem only requires that the final hamiltonian is 
 # np.savez("USA_values.npz", integer=M, array_1D=B, array_2D=J, index = min_index)
@@ -579,11 +583,11 @@ q = 250
 
 
 
-data = np.load("USA_values.npz")
-M = data["integer"].item()
-B = data["array_1D"]
-J = data["array_2D"]
-min_index = data["index"].item()
+# data = np.load("USA_values.npz")
+# M = data["integer"].item()
+# B = data["array_1D"]
+# J = data["array_2D"]
+# min_index = data["index"].item()
 
 
 # H = problem_hamiltonian(M,B,J,n)
@@ -735,8 +739,7 @@ def round_to_1_sf(value):
 
         return rounded
 
-
-def E_res_DQA(E_res_threshold,target_qubit,n,M,B,J, t_max_starting_value,t_max_step, save = False, q= 150):  
+def E_res_DQA(E_res_threshold,target_qubit,n,M,B,J, t_max_starting_value,t_max_step, save_mode = False, q= 150):  
 
     #initialize the state
 
@@ -745,6 +748,8 @@ def E_res_DQA(E_res_threshold,target_qubit,n,M,B,J, t_max_starting_value,t_max_s
     initial_hamiltonian = initial_d_h+initial_p_h
     ground_state_eigenvector = eigh(initial_hamiltonian)[1][:,0]
     H_problem = problem_hamiltonian(M,B,J,n)    
+    file_1 = "Minimum_gap_data.txt"
+    file_2 = "T_max_data.txt"
     
 
     #find E_0
@@ -791,23 +796,57 @@ def E_res_DQA(E_res_threshold,target_qubit,n,M,B,J, t_max_starting_value,t_max_s
 
         if np.isclose(E_res,E_res_threshold, atol = round_to_1_sf(E_res_threshold)/10):   #how accurate could we get it?
 
-            
             print("the critical t_max value is: "+str(t_max)+" with residual energy of: "+str(E_res))
+            print("the corresponding minimum gap size is "+str(minimum_gap_size))
             not_found = False
+            continue
+
+        elif np.isclose(E_res, E_res_threshold, atol = round_to_1_sf(E_res_threshold)):
+
+            delta = (E_res - E_res_threshold) 
+
+            if delta <0:
+                print("overshot slightly")
+                t_max -= 0.5*t_max_step
+            elif delta>0:
+                print("undershooting slightly")
+                t_max += 0.5*t_max_step
+            continue
+        elif np.isclose(E_res, E_res_threshold, atol = round_to_1_sf(E_res_threshold)/4):
+
+            delta = (E_res - E_res_threshold) 
+
+            if delta <0:
+                print("overshot very slightly")
+                t_max -= 0.1*t_max_step
+            elif delta>0:
+                print("undershooting very slightly")
+                t_max += 0.1*t_max_step
+            continue
+
         elif E_res > 10*E_res_threshold:   #do we try factor of 10 or 100?
             print("still far")
-            t_max += 5*t_max_step
+            t_max += 10*t_max_step
+            continue
         elif E_res > E_res_threshold:
             print("getting close")
             t_max += 2*t_max_step
+            continue
 
         elif E_res < E_res_threshold:
-            print("overshot")
-            t_max -= 0.5
+            print("overshot, going back")
+            t_max -= t_max_step
+            continue
+    if save_mode:
+        with open(file_1, "a") as f1, open(file_2,"a") as f2:
+            f1.write(f"{minimum_gap_size}\n")  # Append single value to array1.txt
+            f2.write(f"{E_res}\n")
+        print("saved values")
+
+
 
 
     return minimum_gap_size, E_res
-
 
 def E_res_test_adiabatic(n,M,B,J,t_max,num,min_index,q=400,save_mode = False):
 
@@ -865,31 +904,99 @@ def E_res_test_adiabatic(n,M,B,J,t_max,num,min_index,q=400,save_mode = False):
 # for t_m in value_range:
 #     print("testing t_max value of: "+str(t_m))
 #     E_res_test_adiabatic(n,M,B,J,t_m,0,min_index,save_mode=True)
+
+
+
+
+
+######for calculating E residual threshold...
+
 # Plot_two_variables(filename_1="E_res_data_test_4.txt",filename_2="Probability_data_test_4.txt")
-polycoeff_array = Plot_two_variables()
+# polycoeff_array = Plot_two_variables()
 
-print(polycoeff_array) # first is gradient, second is intercept
-m = polycoeff_array[0]
-c = polycoeff_array[1]
+# print(polycoeff_array) # first is gradient, second is intercept
+# m = polycoeff_array[0]
+# c = polycoeff_array[1]
 
-threshold_E_res = (0.99-c)/m  # we want the one 
+# threshold_E_res = (0.99-c)/m  # we want the one 
 
-print(threshold_E_res)  #we are using this new value now!
+# print(threshold_E_res)  #we are using this new value now!
+
+
+
 ############--------------------------------------------------------------------------
-t_max_starting_value = 1
+t_max_starting_value = 10
 t_max_step = 1
+threshold_E_res = 0.010398576840482203
+n = 7
+target_qubit_range = np.linspace(1,7,7,dtype = int)
+print(target_qubit_range)
+t_max_test = 100
+q = 400
 
-E_res_DQA(threshold_E_res,target_qubit,n,M,B,J,t_max_starting_value,t_max_step)
+
+M, B, J, min_index = unique_satisfiability_problem_generation(n, ratio = 0.7, USA = True, satisfiability_ratio= True, DQA = True)
+
+print("generated random problem")
+
+H = problem_hamiltonian(M,B,J,n)
+
+# Hamiltonian_spectrum(n, t_max, q, H, number_of_eigenvalues = 6)
+
+######----------------------checking degeneracy
+
+eigenvalues = eigh(H)[0]
+
+min_eigenvalue = np.min(eigenvalues)
+
+degeneracy = 0
+
+for i in eigenvalues:
+
+    if i == min_eigenvalue:
+        degeneracy += 1
 
 
-# t_max_step = 1
+print("random problem degeneracy is "+str(degeneracy))
 
-#E_res_test(target_qubit,n,M,B,J,t_max,min_index, save_mode=True)
 
-# min_gap_size, E_res = E_res_DQA(target_qubit,n,M,B,J,t_max,t_max_step)
+####-----------------------------------------------find successful target_qubit
 
-# print(min_gap_size)
-# print(E_res)
+
+incompatible_problem= True
+index_target_qubit = 0
+
+while incompatible_problem:
+    if index_target_qubit > n:
+        print("unsuccessful problem, quitting program")
+        sys.exit()
+    target_qubit = target_qubit_range[index_target_qubit]
+    final_probability = diabatic_evolution_probability_plot(target_qubit, t_max_test, n,M,B,J,min_index, plot_mode = False)
+    if final_probability > 1/(degeneracy+1) or np.isclose(final_probability, (1/(degeneracy+1))):
+
+        print("found successful problem with target qubit+ "+str(target_qubit))
+
+        incompatible_problem = False
+        continue
+    else:
+        index_target_qubit += 1
+
+
+target_qubit = target_qubit_range[index_target_qubit]
+diabatic_test_eigenspectrum(target_qubit,t_max_test,n,M,B,J,number_of_eigenvalues=6,q=q)
+
+print("now finding optimal t_max for threshold E_res")
+E_res_DQA(threshold_E_res,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode= False)
+
+
+
+
+
+
+
+
+
+
 
 
 
