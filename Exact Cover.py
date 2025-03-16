@@ -11,6 +11,7 @@ import time
 from concurrent.futures import ProcessPoolExecutor
 from tqdm import tqdm
 from scipy.optimize import curve_fit
+import math
 
 
 
@@ -668,8 +669,12 @@ def Plot_two_variables(filename_1 = "E_res_data_test.txt", filename_2 = "Probabi
     filename_7_y = "Probability_data_test_7.txt"
     filename_7_x = "E_res_data_test_7.txt"
     filename_7_y = "Probability_data_test_7.txt"
+    filename_8_x = "adiabatic_E_res_0.txt"
+    filename_8_y = "adiabatic_Prob_0.txt"
+
 
     
+
 
     array_1_x = load_array(filename_1_x)
     array_1_y = load_array(filename_1_y)
@@ -685,22 +690,18 @@ def Plot_two_variables(filename_1 = "E_res_data_test.txt", filename_2 = "Probabi
     array_6_y = load_array(filename_6_y)
     array_7_x = load_array(filename_7_x)
     array_7_y = load_array(filename_7_y)
+    array_8_x = load_array(filename_8_x)
+    array_8_y = load_array(filename_8_y)
 
-
-    measure_from_value = 45
+    measure_from_value = 30
  
-    x_data = np.concatenate((array_1_x[measure_from_value:],array_2_x[measure_from_value:], array_3_x[measure_from_value:], array_4_x[measure_from_value:], array_5_x[(measure_from_value-30):], array_6_x[(measure_from_value-30):], array_7_x[(measure_from_value-30):]))
+    x_data = np.concatenate((array_1_x[measure_from_value:],array_2_x[measure_from_value:], array_3_x[measure_from_value:], array_4_x[measure_from_value:], array_5_x[(measure_from_value-30):],array_6_x[(measure_from_value-30):],array_7_x[(measure_from_value-25):], array_8_x))
 
-    y_data = np.concatenate((array_1_y[measure_from_value:],array_2_y[measure_from_value:],array_3_y[measure_from_value:],array_4_y[measure_from_value:],array_5_y[(measure_from_value-30):], array_6_y[(measure_from_value-30):], array_7_y[(measure_from_value-30):] ))
+    y_data = np.concatenate((array_1_y[measure_from_value:],array_2_y[measure_from_value:],array_3_y[measure_from_value:],array_4_y[measure_from_value:],array_5_y[(measure_from_value-30):],array_6_y[(measure_from_value-30):],array_7_y[(measure_from_value-25):],array_8_y))
 
-
-
-    
-
-    poly_coeffs = np.polyfit(x_data, y_data, 2)  # Degree 2 for quadratic
+    poly_coeffs = np.polyfit(x_data, y_data, 1)  # Degree 1 for linear
     poly_fit = np.poly1d(poly_coeffs)
     
-
     initial_E_res = np.max(x_data)
     final_E_res = np.min(x_data)
 
@@ -709,21 +710,33 @@ def Plot_two_variables(filename_1 = "E_res_data_test.txt", filename_2 = "Probabi
     y_val = poly_fit(x_val)
 
     plt.plot(x_val, y_val)
+    
     plt.scatter(array_1_x[measure_from_value:], array_1_y[measure_from_value:],s=10,label = "n=8")
     plt.scatter(array_2_x[measure_from_value:], array_2_y[measure_from_value:],s=10, label = "n=7")
     plt.scatter(array_3_x[measure_from_value:], array_3_y[measure_from_value:],s=10, label = "n=6" )
     plt.scatter(array_4_x[measure_from_value:], array_4_y[measure_from_value:],s=10, label = "n=5")
     plt.scatter(array_5_x[(measure_from_value-30):], array_5_y[(measure_from_value-30):],s=10, label = "n=9")   #this one is fine as long as measure_from_value >= 30!!
-    plt.scatter(array_6_x[(measure_from_value-30):], array_6_y[(measure_from_value-30):],s=10, label = "n=7")
+    plt.scatter(array_6_x[(measure_from_value-30):], array_6_y[(measure_from_value-30):],s=10, label = "n=7")  #removed this? since is slow?
     plt.scatter(array_7_x[(measure_from_value-30):], array_7_y[(measure_from_value-30):],s=10, label = "n=7")
+    plt.scatter(array_8_x[measure_from_value:], array_8_y[measure_from_value:],s=10, label = "adiabatic n=7")  #adiabatic
     plt.gca().invert_xaxis()
     plt.legend()
     plt.show()
 
     return poly_coeffs   #returns an array
 
+def round_to_1_sf(value):
 
-def E_res_DQA(target_qubit,n,M,B,J, t_max_starting_value,t_max_step, save = False, q= 150):  
+    if value == 0:
+        return 0
+    else:
+        order = math.floor(math.log10(value))
+        rounded = round(value, -order)
+
+        return rounded
+
+
+def E_res_DQA(E_res_threshold,target_qubit,n,M,B,J, t_max_starting_value,t_max_step, save = False, q= 150):  
 
     #initialize the state
 
@@ -732,7 +745,7 @@ def E_res_DQA(target_qubit,n,M,B,J, t_max_starting_value,t_max_step, save = Fals
     initial_hamiltonian = initial_d_h+initial_p_h
     ground_state_eigenvector = eigh(initial_hamiltonian)[1][:,0]
     H_problem = problem_hamiltonian(M,B,J,n)    
-    E_res_threshold = 0.1
+    
 
     #find E_0
 
@@ -753,7 +766,7 @@ def E_res_DQA(target_qubit,n,M,B,J, t_max_starting_value,t_max_step, save = Fals
          eigenvalue_difference[i] = abs(instantaneous_eigenvalues_set[1]-instantaneous_eigenvalues_set[0])
     
     minimum_gap_size = np.min(eigenvalue_difference)
-    print(minimum_gap_size)
+    print("minimum gap size is: "+str(minimum_gap_size))
 
     #initialize annealing:
     not_found = True
@@ -774,15 +787,23 @@ def E_res_DQA(target_qubit,n,M,B,J, t_max_starting_value,t_max_step, save = Fals
 
         E_res = abs(E_final - E_0)  #should it be the absolute value?
 
-        print(E_res)
+        print("testing for t_max, "+str(t_max)+", gives E_res of: "+str(E_res))
 
+        if np.isclose(E_res,E_res_threshold, atol = round_to_1_sf(E_res_threshold)/10):   #how accurate could we get it?
 
-        if E_res < E_res_threshold:
-            print(t_max)
+            
+            print("the critical t_max value is: "+str(t_max)+" with residual energy of: "+str(E_res))
             not_found = False
-        else:
-            t_max += t_max_step
-            continue
+        elif E_res > 10*E_res_threshold:   #do we try factor of 10 or 100?
+            print("still far")
+            t_max += 5*t_max_step
+        elif E_res > E_res_threshold:
+            print("getting close")
+            t_max += 2*t_max_step
+
+        elif E_res < E_res_threshold:
+            print("overshot")
+            t_max -= 0.5
 
 
     return minimum_gap_size, E_res
@@ -827,7 +848,6 @@ def E_res_test_adiabatic(n,M,B,J,t_max,num,min_index,q=400,save_mode = False):
             f2.write(f"{probability}\n")
         print("saved values")
 
-        
 
 
 
@@ -846,13 +866,20 @@ def E_res_test_adiabatic(n,M,B,J,t_max,num,min_index,q=400,save_mode = False):
 #     print("testing t_max value of: "+str(t_m))
 #     E_res_test_adiabatic(n,M,B,J,t_m,0,min_index,save_mode=True)
 # Plot_two_variables(filename_1="E_res_data_test_4.txt",filename_2="Probability_data_test_4.txt")
-# polycoeff_array = Plot_two_variables()
+polycoeff_array = Plot_two_variables()
 
+print(polycoeff_array) # first is gradient, second is intercept
+m = polycoeff_array[0]
+c = polycoeff_array[1]
 
+threshold_E_res = (0.99-c)/m  # we want the one 
+
+print(threshold_E_res)  #we are using this new value now!
 ############--------------------------------------------------------------------------
+t_max_starting_value = 1
+t_max_step = 1
 
-
-
+E_res_DQA(threshold_E_res,target_qubit,n,M,B,J,t_max_starting_value,t_max_step)
 
 
 # t_max_step = 1
