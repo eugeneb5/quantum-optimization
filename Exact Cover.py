@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import os
 import time
+import csv
 from concurrent.futures import ProcessPoolExecutor
 from tqdm import tqdm
 from scipy.optimize import curve_fit
@@ -741,7 +742,7 @@ def round_to_1_sf(value):
 
         return rounded
 
-def E_res_DQA(E_res_threshold,target_qubit,n,M,B,J, t_max_starting_value,t_max_step, save_mode = False, q= 150):  
+def E_res_DQA(E_res_threshold,target_qubit,n,M,B,J, t_max_starting_value,t_max_step, save_mode = False, q= 400, save_upper = False, save_lower = False):  
 
     #initialize the state
 
@@ -752,9 +753,17 @@ def E_res_DQA(E_res_threshold,target_qubit,n,M,B,J, t_max_starting_value,t_max_s
     H_problem = problem_hamiltonian(M,B,J,n)    
     file_1 = "Minimum_gap_data.txt"
     file_2 = "T_max_data.txt"
+
+    if save_upper:
+        file_1 = "Minimum_gap_data_upper_bound.txt"   #just to fill the space, we don't really need this otherwise
+        file_2 = "T_max_upper_bound_data.txt"
     
+    elif save_lower:
+        file_1 = "Minimum_gap_data_lower_bound.txt"   #just to fill the space, we don't really need this otherwise
+        file_2 = "T_max_lower_bound_data.txt"
 
     #find E_0
+
 
 
     E_0 = eigh(H_problem)[0][0]  #should be minimum value
@@ -873,7 +882,7 @@ def E_res_DQA(E_res_threshold,target_qubit,n,M,B,J, t_max_starting_value,t_max_s
 
 
 
-    return minimum_gap_size, E_res
+    return minimum_gap_size, E_res, t_max
 
 def E_res_test_adiabatic(n,M,B,J,t_max,num,min_index,q=400,save_mode = False):
 
@@ -914,8 +923,29 @@ def E_res_test_adiabatic(n,M,B,J,t_max,num,min_index,q=400,save_mode = False):
             f2.write(f"{probability}\n")
         print("saved values")
 
+def update_counter(filename, condition_met):
+    try:
+        # Read current counter from file
+        with open(filename, "r") as file:
+            count = int(file.read().strip())
+    except FileNotFoundError:
+        # If file doesn't exist, start at 0
+        count = 0
 
+    # If result == x (condition is True), increment counter
+    if condition_met:
+        count += 1
 
+    # Write updated counter back to file
+    with open(filename, "w") as file:
+        file.write(str(count))
+
+    print(f"Current count: {count}")
+    return count
+
+def log_integer(filename, value):
+    with open(filename, 'a') as f:
+        f.write(f"{value}\n")
 
 
 # E_res_test(target_qubit,n,M,B,J,t_max,min_index,q=200)
@@ -984,14 +1014,20 @@ t_max_test = 100
 q = 400
 
 
-M, B, J, min_index = unique_satisfiability_problem_generation(n, ratio = 0.7, USA = True, satisfiability_ratio= True, DQA = True)
-np.savez("USA_values.npz", integer=M, array_1D=B, array_2D=J, index = min_index)
+M, B, J, min_index = unique_satisfiability_problem_generation(n, ratio = 1.4, USA = True, satisfiability_ratio= True, DQA = True)
+# np.savez("USA_values.npz", integer=M, array_1D=B, array_2D=J, index = min_index)
+
+# data = np.load("USA_values.npz")
+# M = data["integer"].item()
+# B = data["array_1D"]
+# J = data["array_2D"]
+# min_index = data["index"].item()
 
 print("generated random problem")
 
 H = problem_hamiltonian(M,B,J,n)
 
-# Hamiltonian_spectrum(n, t_max, q, H, number_of_eigenvalues = 6)
+Hamiltonian_spectrum(n, t_max, q, H, number_of_eigenvalues = 6)
 
 ######----------------------checking degeneracy
 
@@ -1015,17 +1051,21 @@ print("random problem degeneracy is "+str(degeneracy))
 
 incompatible_problem= True
 index_target_qubit = 0
+fail = False
 
 while incompatible_problem:
     if index_target_qubit > n:
         print("unsuccessful problem, quitting program")
+        fail = True
+        update_counter("number_of_times_failed.txt",fail)
+        log_integer("failed_problems_ratio.txt",M)
         sys.exit()
     target_qubit = target_qubit_range[index_target_qubit]
     print("testing with qubit "+str(target_qubit))
     final_probability = diabatic_evolution_probability_plot(target_qubit, t_max_test, n,M,B,J,min_index, plot_mode = False)
     if final_probability > 1/(degeneracy+1) or np.isclose(final_probability, (1/(degeneracy+1))):
 
-        print("found successful problem with target qubit "+str(target_qubit))
+        print("found successful problem with target qubit "+str(target_qubit)+"with success probability of: "+str(final_probability))
 
         incompatible_problem = False
         continue
@@ -1040,7 +1080,23 @@ target_qubit = target_qubit_range[index_target_qubit]
 diabatic_test_eigenspectrum(target_qubit,t_max_test,n,M,B,J,number_of_eigenvalues=6,q=q)
 
 print("now finding optimal t_max for threshold E_res")
-E_res_DQA(threshold_E_res,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode= False)
+_,_, optimal_t_max = E_res_DQA(threshold_E_res,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode= False)
+
+#for upperbound now
+print("doing the upper bound calculation")
+
+t_max_starting_value = round(optimal_t_max) + 5
+
+E_res_DQA(threshold_E_res_upper_value,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode= False,save_upper=True)
+
+#for lower bound
+print("doing lower bound now")
+
+t_max_starting_value = round(optimal_t_max) - 5
+
+E_res_DQA(threshold_E_res_lower_value,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode= False,save_lower=True)
+
+
 
 
 
