@@ -10,6 +10,7 @@ import os
 import time
 from concurrent.futures import ProcessPoolExecutor
 from tqdm import tqdm
+from scipy.optimize import curve_fit
 
 
 
@@ -286,6 +287,31 @@ def Hamiltonian_spectrum(n,t_max,q,H_p,number_of_eigenvalues = 2):
     plt.show()
 
         
+def adiabatic_probability(n,t_max,M,B,J,q=150):
+
+    H_p = problem_hamiltonian(M,B,J,n)
+
+    H_0 = Time_dependent_Hamiltonian(n, 0 , t_max,H_p)
+
+    state = eigh(H_0)[1][:,0]
+
+    min_eigenvalue = eigh(H_p)[0][0] 
+
+    comparison_vector = eigh(H_p)[1][:,0]
+
+    dt = t_max/(q)
+    
+    
+    for i in range(0,q+1):
+
+        Hamiltonian_at_time_instance = Time_dependent_Hamiltonian(n,i*dt,t_max,H_p)
+
+        state = np.dot(expm(-1j*dt*Hamiltonian_at_time_instance),state)
+
+    
+    final_probability = abs(((np.vdot(state,comparison_vector))))**2
+
+    print("probability by adiabatic annealing is: "+str(final_probability))
 
 
 
@@ -540,10 +566,10 @@ def diabatic_test_eigenspectrum(target_qubit,t_max,n,M,B,J,number_of_eigenvalues
 
 
 
-n = 6
-target_qubit = 2
-t_max = 50
-q = 300
+n = 7
+target_qubit = 5
+t_max = 150
+q = 250
 
 # M, B, J, min_index = unique_satisfiability_problem_generation(n, ratio = 0.7, USA = True, satisfiability_ratio= True, DQA = True)   #save a problem!!!! and also try change the starting hamiltonian maybe??? adapt it perhaps!? solving the decision problem only requires that the final hamiltonian is 
 # np.savez("USA_values.npz", integer=M, array_1D=B, array_2D=J, index = min_index)
@@ -552,24 +578,26 @@ q = 300
 
 
 
-# data = np.load("USA_values.npz")
-# M = data["integer"].item()
-# B = data["array_1D"]
-# J = data["array_2D"]
-# min_index = data["index"].item()
+data = np.load("USA_values.npz")
+M = data["integer"].item()
+B = data["array_1D"]
+J = data["array_2D"]
+min_index = data["index"].item()
 
 
 # H = problem_hamiltonian(M,B,J,n)
 
 # Hamiltonian_spectrum(n, t_max, q, H, number_of_eigenvalues = 6)
 
-# diabatic_test_eigenspectrum(target_qubit,t_max, n, M,B,J, number_of_eigenvalues=4)
+# adiabatic_probability(n,t_max,M,B,J)
+
+# diabatic_test_eigenspectrum(target_qubit,t_max, n, M,B,J, number_of_eigenvalues=6)
 
 # diabatic_evolution_probability_plot(target_qubit,t_max,n,M,B,J,min_index, test_excited_state=False)
 
 
 
-#work in a saving the problem method!!
+
 
 
 
@@ -583,8 +611,8 @@ def E_res_test(target_qubit,n,M,B,J,t_max,min_index,q=300, save_mode = False):
     initial_hamiltonian = initial_d_h+initial_p_h
     state = eigh(initial_hamiltonian)[1][:,0]
     H_problem = problem_hamiltonian(M,B,J,n)
-    file_1 = "E_res_data_test_4.txt"
-    file_2 = "Probability_data_test_4.txt"
+    file_1 = "E_res_data_test_7.txt"
+    file_2 = "Probability_data_test_7.txt"
 
     eigenvalues, eigenvectors = eigh(H_problem)
     E_0 = eigenvalues[0]
@@ -616,7 +644,8 @@ def E_res_test(target_qubit,n,M,B,J,t_max,min_index,q=300, save_mode = False):
             f1.write(f"{E_res}\n")  # Append single value to array1.txt
             f2.write(f"{probability}\n")
         print("saved values")
-        
+
+
 def Plot_two_variables(filename_1 = "E_res_data_test.txt", filename_2 = "Probability_data_test.txt"):
 
     def load_array(filename):
@@ -631,8 +660,16 @@ def Plot_two_variables(filename_1 = "E_res_data_test.txt", filename_2 = "Probabi
     filename_3_y = "Probability_data_test_2.txt"
     filename_4_x = "E_res_data_test_3.txt"
     filename_4_y = "Probability_data_test_3.txt"
-    filename_5_x = "E_res_data_test_4.txt"
-    filename_5_y = "Probability_data_test_4.txt"
+    filename_5_x = "E_res_data_test_5.txt"
+    filename_5_y = "Probability_data_test_5.txt"
+    filename_6_x = "E_res_data_test_6.txt"
+    filename_6_y = "Probability_data_test_6.txt"
+    filename_7_x = "E_res_data_test_7.txt"
+    filename_7_y = "Probability_data_test_7.txt"
+    filename_7_x = "E_res_data_test_7.txt"
+    filename_7_y = "Probability_data_test_7.txt"
+
+    
 
     array_1_x = load_array(filename_1_x)
     array_1_y = load_array(filename_1_y)
@@ -642,19 +679,49 @@ def Plot_two_variables(filename_1 = "E_res_data_test.txt", filename_2 = "Probabi
     array_3_y = load_array(filename_3_y)
     array_4_x = load_array(filename_4_x)
     array_4_y = load_array(filename_4_y)
-    array_5_x = load_array(filename_5_x)
+    array_5_x = load_array(filename_5_x) # these ones onwards are indexed 0 to 30 - they are values between 20 and 50 t_max
     array_5_y = load_array(filename_5_y)
+    array_6_x = load_array(filename_6_x)
+    array_6_y = load_array(filename_6_y)
+    array_7_x = load_array(filename_7_x)
+    array_7_y = load_array(filename_7_y)
 
-    measure_from_value = 0
 
+    measure_from_value = 45
+ 
+    x_data = np.concatenate((array_1_x[measure_from_value:],array_2_x[measure_from_value:], array_3_x[measure_from_value:], array_4_x[measure_from_value:], array_5_x[(measure_from_value-30):], array_6_x[(measure_from_value-30):], array_7_x[(measure_from_value-30):]))
+
+    y_data = np.concatenate((array_1_y[measure_from_value:],array_2_y[measure_from_value:],array_3_y[measure_from_value:],array_4_y[measure_from_value:],array_5_y[(measure_from_value-30):], array_6_y[(measure_from_value-30):], array_7_y[(measure_from_value-30):] ))
+
+
+
+    
+
+    poly_coeffs = np.polyfit(x_data, y_data, 2)  # Degree 2 for quadratic
+    poly_fit = np.poly1d(poly_coeffs)
+    
+
+    initial_E_res = np.max(x_data)
+    final_E_res = np.min(x_data)
+
+    x_val = np.linspace(initial_E_res,final_E_res,50)
+
+    y_val = poly_fit(x_val)
+
+    plt.plot(x_val, y_val)
     plt.scatter(array_1_x[measure_from_value:], array_1_y[measure_from_value:],s=10,label = "n=8")
     plt.scatter(array_2_x[measure_from_value:], array_2_y[measure_from_value:],s=10, label = "n=7")
     plt.scatter(array_3_x[measure_from_value:], array_3_y[measure_from_value:],s=10, label = "n=6" )
     plt.scatter(array_4_x[measure_from_value:], array_4_y[measure_from_value:],s=10, label = "n=5")
-    plt.scatter(array_5_x[measure_from_value:], array_5_y[measure_from_value:],s=10, label = "n=6 several problems")
+    plt.scatter(array_5_x[(measure_from_value-30):], array_5_y[(measure_from_value-30):],s=10, label = "n=9")   #this one is fine as long as measure_from_value >= 30!!
+    plt.scatter(array_6_x[(measure_from_value-30):], array_6_y[(measure_from_value-30):],s=10, label = "n=7")
+    plt.scatter(array_7_x[(measure_from_value-30):], array_7_y[(measure_from_value-30):],s=10, label = "n=7")
     plt.gca().invert_xaxis()
     plt.legend()
     plt.show()
+
+    return poly_coeffs   #returns an array
+
 
 def E_res_DQA(target_qubit,n,M,B,J, t_max_starting_value,t_max_step, save = False, q= 150):  
 
@@ -721,21 +788,74 @@ def E_res_DQA(target_qubit,n,M,B,J, t_max_starting_value,t_max_step, save = Fals
     return minimum_gap_size, E_res
 
 
+def E_res_test_adiabatic(n,M,B,J,t_max,num,min_index,q=400,save_mode = False):
 
-t_max_step = 1
+    H_problem = problem_hamiltonian(M,B,J,n)
+    initial_hamiltonian = Time_dependent_Hamiltonian(n,0,t_max,H_problem)
+    state = eigh(initial_hamiltonian)[1][:,0]
+    
 
-### for generating values
+    file_1 = f"adiabatic_E_res_{num}.txt"
+    file_2 = f"adiabatic_Prob_{num}.txt"
 
-# value_range = np.linspace(1,50,num=50)
+    eigenvalues, eigenvectors = eigh(H_problem)
+    E_0 = eigenvalues[0]
+    comparison_vector = np.zeros((2**n))
+    comparison_vector[min_index] = 1
+
+    print("the E_0 reference value is: "+str(E_0))
+    dt = t_max/q
+    for i in range(0,q+1):
+
+        Hamiltonian_at_time_instance = Time_dependent_Hamiltonian(n,i*dt,t_max,H_problem)
+
+        state = np.dot(expm(-1j*dt*Hamiltonian_at_time_instance),state)
+    
+    E_final = state@(H_problem@state)
+
+    E_res = abs(E_final - E_0)  #should it be the absolute value?
+
+    print("the E_res value for annealing time, "+str(t_max)+"seconds is: "+str(E_res))
+
+    probability = abs(((np.vdot(state,comparison_vector))))**2
+
+    print("probability of success is: "+str(probability))
+
+    if save_mode:
+        with open(file_1, "a") as f1, open(file_2,"a") as f2:
+            f1.write(f"{E_res}\n")  # Append single value to array1.txt
+            f2.write(f"{probability}\n")
+        print("saved values")
+
+        
+
+
+
+
+# E_res_test(target_qubit,n,M,B,J,t_max,min_index,q=200)
+
+
+
+
+### for generating E_res vs prob plot--------------------------------------------
+
+# value_range = np.linspace(151,200,num=50)
+
+
 # for t_m in value_range:
 #     print("testing t_max value of: "+str(t_m))
-#     E_res_test(target_qubit,n,M,B,J,t_m,min_index,save_mode=True)
+#     E_res_test_adiabatic(n,M,B,J,t_m,0,min_index,save_mode=True)
 # Plot_two_variables(filename_1="E_res_data_test_4.txt",filename_2="Probability_data_test_4.txt")
-
-Plot_two_variables()
-
+# polycoeff_array = Plot_two_variables()
 
 
+############--------------------------------------------------------------------------
+
+
+
+
+
+# t_max_step = 1
 
 #E_res_test(target_qubit,n,M,B,J,t_max,min_index, save_mode=True)
 
