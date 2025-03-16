@@ -650,7 +650,6 @@ def E_res_test(target_qubit,n,M,B,J,t_max,min_index,q=300, save_mode = False):
             f2.write(f"{probability}\n")
         print("saved values")
 
-
 def Plot_two_variables(filename_1 = "E_res_data_test.txt", filename_2 = "Probability_data_test.txt"):
 
     def load_array(filename):
@@ -703,8 +702,11 @@ def Plot_two_variables(filename_1 = "E_res_data_test.txt", filename_2 = "Probabi
 
     y_data = np.concatenate((array_1_y[measure_from_value:],array_2_y[measure_from_value:],array_3_y[measure_from_value:],array_4_y[measure_from_value:],array_5_y[(measure_from_value-30):],array_6_y[(measure_from_value-30):],array_7_y[(measure_from_value-25):],array_8_y))
 
-    poly_coeffs = np.polyfit(x_data, y_data, 1)  # Degree 1 for linear
+    poly_coeffs, cov_matrix = np.polyfit(x_data, y_data, 1, cov = True)  # Degree 1 for linear
     poly_fit = np.poly1d(poly_coeffs)
+
+    m_uncertainty = np.sqrt(cov_matrix[0, 0])
+    c_uncertainty = np.sqrt(cov_matrix[1, 1])
     
     initial_E_res = np.max(x_data)
     final_E_res = np.min(x_data)
@@ -727,7 +729,7 @@ def Plot_two_variables(filename_1 = "E_res_data_test.txt", filename_2 = "Probabi
     plt.legend()
     plt.show()
 
-    return poly_coeffs   #returns an array
+    return poly_coeffs, m_uncertainty, c_uncertainty   #returns an array
 
 def round_to_1_sf(value):
 
@@ -807,18 +809,18 @@ def E_res_DQA(E_res_threshold,target_qubit,n,M,B,J, t_max_starting_value,t_max_s
 
             if delta <0:
                 print("overshot slightly")
-                t_max -= 0.5*t_max_step
+                t_max -= 0.4*t_max_step
             elif delta>0:
                 print("undershooting slightly")
                 t_max += 0.5*t_max_step
             continue
-        elif np.isclose(E_res, E_res_threshold, atol = round_to_1_sf(E_res_threshold)/4):
+        elif np.isclose(E_res, E_res_threshold, atol = round_to_1_sf(E_res_threshold)/5):
 
             delta = (E_res - E_res_threshold) 
 
             if delta <0:
                 print("overshot very slightly")
-                t_max -= 0.1*t_max_step
+                t_max -= 0.09*t_max_step
             elif delta>0:
                 print("undershooting very slightly")
                 t_max += 0.1*t_max_step
@@ -911,82 +913,103 @@ def E_res_test_adiabatic(n,M,B,J,t_max,num,min_index,q=400,save_mode = False):
 
 ######for calculating E residual threshold...
 
-# Plot_two_variables(filename_1="E_res_data_test_4.txt",filename_2="Probability_data_test_4.txt")
-# polycoeff_array = Plot_two_variables()
+Plot_two_variables(filename_1="E_res_data_test_4.txt",filename_2="Probability_data_test_4.txt")
+polycoeff_array, m_uncert, c_uncert = Plot_two_variables()
 
-# print(polycoeff_array) # first is gradient, second is intercept
-# m = polycoeff_array[0]
-# c = polycoeff_array[1]
+print(polycoeff_array) # first is gradient, second is intercept
+m = polycoeff_array[0]  #m is negative
+c = polycoeff_array[1]  
 
-# threshold_E_res = (0.99-c)/m  # we want the one 
+#uncertainties are given >0:
 
-# print(threshold_E_res)  #we are using this new value now!
+m_shallower = m+ m_uncert
+m_steeper = m - m_uncert
+
+c_lower = c - c_uncert
+c_upper = c+c_uncert
+
+
+
+threshold_E_res = (0.99-c)/m  # we want the one 
+
+threshold_E_res_upper_value = (0.99-c_upper)/m_shallower
+threshold_E_res_lower_value = (0.99-c_lower)/m_steeper
+
+
+print("mean value: "+str(threshold_E_res))  #we are using this new value now!
+
+print("upper limit: "+str(threshold_E_res_upper_value))
+print("lower limit: "+str(threshold_E_res_lower_value))
 
 
 
 ############--------------------------------------------------------------------------
-t_max_starting_value = 10
-t_max_step = 1
-threshold_E_res = 0.010398576840482203
-n = 7
-target_qubit_range = np.linspace(1,7,7,dtype = int)
-print(target_qubit_range)
-t_max_test = 100
-q = 400
+# t_max_starting_value = 10
+# t_max_step = 1
+# threshold_E_res = 0.010398576840482203
+# n = 8
+# target_qubit_range = np.linspace(1,n,n,dtype = int)
+# print(target_qubit_range)
+# t_max_test = 100
+# q = 400
 
 
-M, B, J, min_index = unique_satisfiability_problem_generation(n, ratio = 0.7, USA = True, satisfiability_ratio= True, DQA = True)
+# M, B, J, min_index = unique_satisfiability_problem_generation(n, ratio = 0.7, USA = True, satisfiability_ratio= True, DQA = True)
 
-print("generated random problem")
+# print("generated random problem")
 
-H = problem_hamiltonian(M,B,J,n)
+# H = problem_hamiltonian(M,B,J,n)
 
-# Hamiltonian_spectrum(n, t_max, q, H, number_of_eigenvalues = 6)
+# # Hamiltonian_spectrum(n, t_max, q, H, number_of_eigenvalues = 6)
 
-######----------------------checking degeneracy
+# ######----------------------checking degeneracy
 
-eigenvalues = eigh(H)[0]
+# eigenvalues = eigh(H)[0]
 
-min_eigenvalue = np.min(eigenvalues)
+# min_eigenvalue = np.min(eigenvalues)
 
-degeneracy = 0
+# degeneracy = 0
 
-for i in eigenvalues:
+# for i in eigenvalues:
 
-    if i == min_eigenvalue:
-        degeneracy += 1
-
-
-print("random problem degeneracy is "+str(degeneracy))
+#     if i == min_eigenvalue:
+#         degeneracy += 1
 
 
-####-----------------------------------------------find successful target_qubit
+# print("random problem degeneracy is "+str(degeneracy))
 
 
-incompatible_problem= True
-index_target_qubit = 0
-
-while incompatible_problem:
-    if index_target_qubit > n:
-        print("unsuccessful problem, quitting program")
-        sys.exit()
-    target_qubit = target_qubit_range[index_target_qubit]
-    final_probability = diabatic_evolution_probability_plot(target_qubit, t_max_test, n,M,B,J,min_index, plot_mode = False)
-    if final_probability > 1/(degeneracy+1) or np.isclose(final_probability, (1/(degeneracy+1))):
-
-        print("found successful problem with target qubit+ "+str(target_qubit))
-
-        incompatible_problem = False
-        continue
-    else:
-        index_target_qubit += 1
+# ####-----------------------------------------------find successful target_qubit
 
 
-target_qubit = target_qubit_range[index_target_qubit]
-diabatic_test_eigenspectrum(target_qubit,t_max_test,n,M,B,J,number_of_eigenvalues=6,q=q)
+# incompatible_problem= True
+# index_target_qubit = 0
 
-print("now finding optimal t_max for threshold E_res")
-E_res_DQA(threshold_E_res,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode= False)
+# while incompatible_problem:
+#     if index_target_qubit > n:
+#         print("unsuccessful problem, quitting program")
+#         sys.exit()
+#     target_qubit = target_qubit_range[index_target_qubit]
+#     print("testing with qubit "+str(target_qubit))
+#     final_probability = diabatic_evolution_probability_plot(target_qubit, t_max_test, n,M,B,J,min_index, plot_mode = False)
+#     if final_probability > 1/(degeneracy+1) or np.isclose(final_probability, (1/(degeneracy+1))):
+
+#         print("found successful problem with target qubit "+str(target_qubit))
+
+#         incompatible_problem = False
+#         continue
+#     else:
+#         index_target_qubit += 1
+
+# ###------------------------------------------now find optimal t_max
+
+
+
+# target_qubit = target_qubit_range[index_target_qubit]
+# diabatic_test_eigenspectrum(target_qubit,t_max_test,n,M,B,J,number_of_eigenvalues=6,q=q)
+
+# print("now finding optimal t_max for threshold E_res")
+# E_res_DQA(threshold_E_res,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode= False)
 
 
 
