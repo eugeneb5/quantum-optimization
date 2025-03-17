@@ -751,16 +751,17 @@ def E_res_DQA(E_res_threshold,target_qubit,n,M,B,J, t_max_starting_value,t_max_s
     initial_hamiltonian = initial_d_h+initial_p_h
     ground_state_eigenvector = eigh(initial_hamiltonian)[1][:,0]
     H_problem = problem_hamiltonian(M,B,J,n)    
-    file_1 = "Minimum_gap_data.txt"
-    file_2 = "T_max_data.txt"
+    file_1 = "Minimum_gap_data_redo.txt"
+    file_2 = "T_max_data_redo.txt"
+    file_3 = "problem_dimension_redo.txt"
 
     if save_upper:
-        file_1 = "Minimum_gap_data_upper_bound.txt"   #just to fill the space, we don't really need this otherwise
-        file_2 = "T_max_upper_bound_data.txt"
+        file_1 = "Minimum_gap_data_upper_bound_redo.txt"   #just to fill the space, we don't really need this otherwise
+        file_2 = "T_max_upper_bound_data_redo.txt"
     
     elif save_lower:
-        file_1 = "Minimum_gap_data_lower_bound.txt"   #just to fill the space, we don't really need this otherwise
-        file_2 = "T_max_lower_bound_data.txt"
+        file_1 = "Minimum_gap_data_lower_bound_redo.txt"   #just to fill the space, we don't really need this otherwise
+        file_2 = "T_max_lower_bound_data_redo.txt"
 
     #find E_0
 
@@ -826,7 +827,7 @@ def E_res_DQA(E_res_threshold,target_qubit,n,M,B,J, t_max_starting_value,t_max_s
             print("still far")
             pp_t_max = previous_t_max
             previous_value = E_res
-            print("updated prev: "+str(previous_value))
+            #print("updated prev: "+str(previous_value))
             previous_t_max = t_max
             t_max += 10*t_max_step
             print("new t_max value is " +str(t_max))
@@ -835,7 +836,7 @@ def E_res_DQA(E_res_threshold,target_qubit,n,M,B,J, t_max_starting_value,t_max_s
         elif E_res > E_res_threshold and not bisection:
             pp_t_max = previous_t_max
             previous_value = E_res
-            print("updated prev: "+str(previous_value))
+            #print("updated prev: "+str(previous_value))
             previous_t_max = t_max
             print("getting close")
             t_max += 2*t_max_step
@@ -874,9 +875,14 @@ def E_res_DQA(E_res_threshold,target_qubit,n,M,B,J, t_max_starting_value,t_max_s
 
         
     if save_mode:
-        with open(file_1, "a") as f1, open(file_2,"a") as f2:
+        print(minimum_gap_size)
+        print(t_max)
+        with open(file_1, "a") as f1, open(file_2,"a") as f2, open(file_3, "a") as f3:
+            f1.write("Test line\n")
             f1.write(f"{minimum_gap_size}\n")  # Append single value to array1.txt
             f2.write(f"{t_max}\n")
+            if not save_lower and not save_upper:
+                f3.write(f"{n}\n")
         print("saved values")
 
 
@@ -1007,7 +1013,7 @@ threshold_E_res_upper_value = 0.0112
 threshold_E_res_lower_value = 0.0097  #these values are fixed/ rounded
 
 
-n = 5
+n = 6
 target_qubit_range = np.linspace(1,n,n,dtype = int)
 print(target_qubit_range)
 t_max_test = 100
@@ -1080,21 +1086,21 @@ target_qubit = target_qubit_range[index_target_qubit]
 # diabatic_test_eigenspectrum(target_qubit,t_max_test,n,M,B,J,number_of_eigenvalues=6,q=q)
 
 print("now finding optimal t_max for threshold E_res")
-_,_, optimal_t_max = E_res_DQA(threshold_E_res,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode= False)
+_,_, optimal_t_max = E_res_DQA(threshold_E_res,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode=True)
 
 #for upperbound now
 print("doing the upper bound calculation")
 
 t_max_starting_value = round(optimal_t_max) + 5
 
-E_res_DQA(threshold_E_res_upper_value,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode= False,save_upper=True)
+E_res_DQA(threshold_E_res_upper_value,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode=True,save_upper=True)
 
 #for lower bound
 print("doing lower bound now")
 
 t_max_starting_value = round(optimal_t_max) - 5
 
-E_res_DQA(threshold_E_res_lower_value,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode= False,save_lower=True)
+E_res_DQA(threshold_E_res_lower_value,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode=True,save_lower=True)
 
 
 
