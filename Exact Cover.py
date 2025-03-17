@@ -1007,7 +1007,7 @@ threshold_E_res_upper_value = 0.0112
 threshold_E_res_lower_value = 0.0097  #these values are fixed/ rounded
 
 
-n = 7
+n = 5
 target_qubit_range = np.linspace(1,n,n,dtype = int)
 print(target_qubit_range)
 t_max_test = 100
@@ -1080,21 +1080,21 @@ target_qubit = target_qubit_range[index_target_qubit]
 # diabatic_test_eigenspectrum(target_qubit,t_max_test,n,M,B,J,number_of_eigenvalues=6,q=q)
 
 print("now finding optimal t_max for threshold E_res")
-_,_, optimal_t_max = E_res_DQA(threshold_E_res,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode= True)
+_,_, optimal_t_max = E_res_DQA(threshold_E_res,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode= False)
 
 #for upperbound now
 print("doing the upper bound calculation")
 
 t_max_starting_value = round(optimal_t_max) + 5
 
-E_res_DQA(threshold_E_res_upper_value,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode= True,save_upper=True)
+E_res_DQA(threshold_E_res_upper_value,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode= False,save_upper=True)
 
 #for lower bound
 print("doing lower bound now")
 
 t_max_starting_value = round(optimal_t_max) - 5
 
-E_res_DQA(threshold_E_res_lower_value,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode= True,save_lower=True)
+E_res_DQA(threshold_E_res_lower_value,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode= False,save_lower=True)
 
 
 
