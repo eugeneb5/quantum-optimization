@@ -219,7 +219,7 @@ def Hamiltonian(n,t,t_max,M):
 
     
     H_t = A(t,t_max)*val + B(t,t_max)*H_ising(n,M,0.5) #kappa = 0.5
-    H_t = (H_t + H_t.T.conj()) / 2 
+    H_t = (H_t + H_t.T.conj()) / 2    #why?? to remove complex num? use dtype definition instead
     return H_t
 
 

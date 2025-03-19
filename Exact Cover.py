@@ -14,7 +14,7 @@ from tqdm import tqdm
 from scipy.optimize import curve_fit
 import math
 import sys
-
+import multiprocessing as mp
 
 
 
@@ -875,10 +875,8 @@ def E_res_DQA(E_res_threshold,target_qubit,n,M,B,J, t_max_starting_value,t_max_s
 
         
     if save_mode:
-        print(minimum_gap_size)
-        print(t_max)
+       
         with open(file_1, "a") as f1, open(file_2,"a") as f2, open(file_3, "a") as f3:
-            f1.write("Test line\n")
             f1.write(f"{minimum_gap_size}\n")  # Append single value to array1.txt
             f2.write(f"{t_max}\n")
             if not save_lower and not save_upper:
@@ -953,7 +951,153 @@ def log_integer(filename, value):
     with open(filename, 'a') as f:
         f.write(f"{value}\n")
 
+def E_res_AQA(E_res_threshold,n,M,B,J, t_max_starting_value,t_max_step, save_mode = False, q= 1000, save_upper = False, save_lower = False):  
 
+    #initialize the state
+
+    H_problem = problem_hamiltonian(M,B,J,n)
+
+    H_0 = Time_dependent_Hamiltonian(n, 0 , t_max_starting_value,H_problem)
+
+    ground_state = eigh(H_0)[1][:,0]  #initial state
+
+    E_0 = eigh(H_problem)[0][0]  #true minimum value
+
+   
+    file_1 = "Minimum_gap_data_adiabatic.txt"
+    file_2 = "T_max_data_adiabatic.txt"
+    file_3 = "problem_dimension_adiabatic.txt"
+
+    if save_upper:
+        file_1 = "Minimum_gap_data_upper_bound_adiabatic.txt"   #just to fill the space, we don't really need this otherwise
+        file_2 = "T_max_upper_bound_data_adiabatic.txt"
+    
+    elif save_lower:
+        file_1 = "Minimum_gap_data_lower_bound_adiabatic.txt"   #just to fill the space, we don't really need this otherwise
+        file_2 = "T_max_lower_bound_data_adiabatic.txt"
+
+    #find E_0
+
+
+
+   
+
+
+    #check for minimum gap size first
+    #does gap size change with t_max??  NO, it doesn't change so can check min_gap
+
+    dt = t_max_starting_value/(q)
+    eigenvalue_difference = np.zeros(q+1)
+    
+
+    for i in range(0,q+1):
+         h = Time_dependent_Hamiltonian(n,dt*i,t_max_starting_value,H_problem)
+         instantaneous_eigenvalues_set = eigh(h)[0]
+         eigenvalue_difference[i] = abs(instantaneous_eigenvalues_set[1]-instantaneous_eigenvalues_set[0])
+    
+    minimum_gap_size = np.min(eigenvalue_difference)
+    print("minimum gap size is: "+str(minimum_gap_size))
+
+    #initialize annealing:
+    not_found = True
+
+    t_max = t_max_starting_value
+
+    previous_value  = 10000
+    previous_t_max = 1
+    bisection = False
+    pp_t_max = 1
+    difference_E_res = 0
+
+    while not_found:
+
+        dt = t_max/(q)
+
+        state = ground_state  #crucial to reset state!
+        
+        for i in range(0,q+1):
+
+            Hamiltonian_at_time_instance = Time_dependent_Hamiltonian(n,dt*i,t_max,H_problem)
+
+            state = np.dot(expm(-1j*dt*Hamiltonian_at_time_instance),state)
+
+        E_final = state@(H_problem@state)
+
+        E_res = abs(E_final - E_0)  #should it be the absolute value?
+
+        print("testing for t_max, "+str(t_max)+", gives E_res of: "+str(E_res))
+
+        
+
+        if np.isclose(E_res,E_res_threshold, rtol = 0.001):   #how accurate could we get it?
+
+            print("the critical t_max value is: "+str(t_max)+" with residual energy of: "+str(E_res))
+            print("the corresponding minimum gap size is "+str(minimum_gap_size))
+            not_found = False
+            continue
+
+
+        elif E_res > 7.5*E_res_threshold and not bisection:   #do we try factor of 10 or 100?
+            print("still far")
+            pp_t_max = previous_t_max
+            previous_value = E_res
+            #print("updated prev: "+str(previous_value))
+            previous_t_max = t_max
+            t_max += 20*t_max_step
+            print("new t_max value is " +str(t_max))
+            continue
+
+        elif E_res > E_res_threshold and not bisection:
+            pp_t_max = previous_t_max
+            previous_value = E_res
+            #print("updated prev: "+str(previous_value))
+            previous_t_max = t_max
+            print("getting close")
+            t_max += 2*t_max_step
+            print("new t_max value is " +str(t_max))
+            continue
+        
+        
+        
+        elif E_res-E_res_threshold <0 and not bisection:   #i.e. sign change detected since overstepped FIRST TIME !
+            print("entering bisection period")
+            difference_E_res = E_res - E_res_threshold
+            pp_t_max = previous_t_max
+            t_max_holder = t_max   #save current t_max before updating it
+            t_max = (previous_t_max+t_max)/2
+            previous_t_max = t_max_holder #then update prev_t_max once new t_max has been calculated
+            previous_value = E_res
+            bisection = True
+            
+            continue
+    
+
+        elif bisection and (E_res - E_res_threshold )*difference_E_res<0:
+            difference_E_res = E_res - E_res_threshold
+            pp_t_max = previous_t_max
+            t_max_holder = t_max
+            t_max = (previous_t_max+t_max)/2
+            previous_t_max = t_max_holder
+            continue
+        elif bisection and (E_res - E_res_threshold)*difference_E_res >0:
+            difference_E_res = E_res - E_res_threshold
+            
+            previous_t_max = t_max
+            t_max = (pp_t_max+t_max)/2
+            
+            continue
+
+        
+    if save_mode:
+        
+        with open(file_1, "a") as f1, open(file_2,"a") as f2, open(file_3, "a") as f3:
+            f1.write(f"{minimum_gap_size}\n")  # Append single value to array1.txt
+            f2.write(f"{t_max}\n")
+            if not save_lower and not save_upper:
+                f3.write(f"{n}\n")
+        print("saved values")
+
+    return t_max
 # E_res_test(target_qubit,n,M,B,J,t_max,min_index,q=200)
 
 
@@ -1006,104 +1150,143 @@ def log_integer(filename, value):
 # threshold_E_res_upper_value = 0.01119135713847231
 
 ############--------------------------------------------------------------------------
-t_max_starting_value = 10
-t_max_step = 1
-threshold_E_res = 0.0104
-threshold_E_res_upper_value = 0.0112
-threshold_E_res_lower_value = 0.0097  #these values are fixed/ rounded
+
+def run(n,rerun = False, save = True):
+    t_max_starting_value = 1
+    t_max_step = 10
+    threshold_E_res = 0.0104
+    threshold_E_res_upper_value = 0.0112
+    threshold_E_res_lower_value = 0.0097  #these values are fixed/ rounded
 
 
-n = 6
-target_qubit_range = np.linspace(1,n,n,dtype = int)
-print(target_qubit_range)
-t_max_test = 100
-q = 400
+    
+    target_qubit_range = np.linspace(1,n,n,dtype = int)
+    print(target_qubit_range)
+    t_max_test = 100
+    q = 400
+
+    if not rerun:
+        M, B, J, min_index = unique_satisfiability_problem_generation(n, ratio = 1.4, USA = True, satisfiability_ratio= True, DQA = True)
+        np.savez("USA_values.npz", integer=M, array_1D=B, array_2D=J, index = min_index)
+        print("generated random problem")
+
+    if rerun:
+        data = np.load("USA_values.npz")
+        M = data["integer"].item()
+        B = data["array_1D"]
+        J = data["array_2D"]
+        min_index = data["index"].item()
+        print("reloaded previous problem")
+
+    
+
+    H = problem_hamiltonian(M,B,J,n)
+
+    # Hamiltonian_spectrum(n, t_max, q, H, number_of_eigenvalues = 6)
+
+    ######----------------------checking degeneracy
+
+    eigenvalues = eigh(H)[0]
+
+    min_eigenvalue = np.min(eigenvalues)
+
+    degeneracy = 0
+
+    for i in eigenvalues:
+
+        if i == min_eigenvalue:
+            degeneracy += 1
 
 
-M, B, J, min_index = unique_satisfiability_problem_generation(n, ratio = 1.4, USA = True, satisfiability_ratio= True, DQA = True)
-# np.savez("USA_values.npz", integer=M, array_1D=B, array_2D=J, index = min_index)
-
-# data = np.load("USA_values.npz")
-# M = data["integer"].item()
-# B = data["array_1D"]
-# J = data["array_2D"]
-# min_index = data["index"].item()
-
-print("generated random problem")
-
-H = problem_hamiltonian(M,B,J,n)
-
-# Hamiltonian_spectrum(n, t_max, q, H, number_of_eigenvalues = 6)
-
-######----------------------checking degeneracy
-
-eigenvalues = eigh(H)[0]
-
-min_eigenvalue = np.min(eigenvalues)
-
-degeneracy = 0
-
-for i in eigenvalues:
-
-    if i == min_eigenvalue:
-        degeneracy += 1
+    print("random problem degeneracy is "+str(degeneracy))
 
 
-print("random problem degeneracy is "+str(degeneracy))
+    ####-----------------------------------------------find successful target_qubit
 
 
-####-----------------------------------------------find successful target_qubit
+    incompatible_problem= True
+    index_target_qubit = 0
+    fail = False
+
+    while incompatible_problem:
+        if index_target_qubit > n:
+            print("unsuccessful problem, quitting program")
+            fail = True
+            update_counter("number_of_times_failed.txt",fail)
+            log_integer("failed_problems_ratio.txt",M)
+            sys.exit()
+        target_qubit = target_qubit_range[index_target_qubit]
+        print("testing with qubit "+str(target_qubit))
+        final_probability = diabatic_evolution_probability_plot(target_qubit, t_max_test, n,M,B,J,min_index, plot_mode = False)
+        if final_probability > 1/(degeneracy+1) or np.isclose(final_probability, (1/(degeneracy+1))):
+
+            print("found successful problem with target qubit "+str(target_qubit)+"with success probability of: "+str(final_probability))
+
+            incompatible_problem = False
+            continue
+        else:
+            index_target_qubit += 1
+
+    ###------------------------------------------now find optimal t_max
 
 
-incompatible_problem= True
-index_target_qubit = 0
-fail = False
 
-while incompatible_problem:
-    if index_target_qubit > n:
-        print("unsuccessful problem, quitting program")
-        fail = True
-        update_counter("number_of_times_failed.txt",fail)
-        log_integer("failed_problems_ratio.txt",M)
-        sys.exit()
     target_qubit = target_qubit_range[index_target_qubit]
-    print("testing with qubit "+str(target_qubit))
-    final_probability = diabatic_evolution_probability_plot(target_qubit, t_max_test, n,M,B,J,min_index, plot_mode = False)
-    if final_probability > 1/(degeneracy+1) or np.isclose(final_probability, (1/(degeneracy+1))):
+    # diabatic_test_eigenspectrum(target_qubit,t_max_test,n,M,B,J,number_of_eigenvalues=6,q=q)
 
-        print("found successful problem with target qubit "+str(target_qubit)+"with success probability of: "+str(final_probability))
+    print("now finding optimal t_max for threshold E_res")
+    _,_, optimal_t_max = E_res_DQA(threshold_E_res,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode = save)
 
-        incompatible_problem = False
-        continue
-    else:
-        index_target_qubit += 1
+    #for upperbound now
+    print("doing the upper bound calculation")
 
-###------------------------------------------now find optimal t_max
+    t_max_starting_value = round(optimal_t_max) 
 
+    E_res_DQA(threshold_E_res_upper_value,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode = save,save_upper=True)
 
+    #for lower bound
+    print("doing lower bound now")
 
-target_qubit = target_qubit_range[index_target_qubit]
-# diabatic_test_eigenspectrum(target_qubit,t_max_test,n,M,B,J,number_of_eigenvalues=6,q=q)
+    t_max_starting_value = round(optimal_t_max) 
 
-print("now finding optimal t_max for threshold E_res")
-_,_, optimal_t_max = E_res_DQA(threshold_E_res,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode=True)
-
-#for upperbound now
-print("doing the upper bound calculation")
-
-t_max_starting_value = round(optimal_t_max) + 5
-
-E_res_DQA(threshold_E_res_upper_value,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode=True,save_upper=True)
-
-#for lower bound
-print("doing lower bound now")
-
-t_max_starting_value = round(optimal_t_max) - 5
-
-E_res_DQA(threshold_E_res_lower_value,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode=True,save_lower=True)
+    E_res_DQA(threshold_E_res_lower_value,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode= save,save_lower=True)
 
 
 
+    #####then initialise for AQA!----------------------------------------------------------------------------------------
+
+
+
+    t_max_starting_value = 1  #need to redefine here again
+    print("doing AQA simulation now")
+
+    optimal_t_max = E_res_AQA(threshold_E_res,n,M,B,J,t_max_starting_value,t_max_step=10,save_mode=save)
+
+    t_max_starting_value = round(optimal_t_max) 
+
+    E_res_AQA(threshold_E_res_upper_value,n,M,B,J,t_max_starting_value,t_max_step=10,save_mode=save,save_upper = True)   #for upperbound E_res
+
+    E_res_AQA(threshold_E_res_lower_value,n,M,B,J,t_max_starting_value,t_max_step=10,save_mode=save, save_lower = True)  #lowerbound
+
+
+# run(5, rerun = True, save = False)
+
+for i in range(3):
+
+    print("running instance "+str(i))
+    
+    run(9)
+
+    
+run(8)
+run(8)
+
+
+#check if is saving properly...it might be doing the same thing again!
+# DONT EDIT txt files while the program is running!
+
+
+#checking results ----------------------------------------------
 
 
 
@@ -1111,8 +1294,32 @@ E_res_DQA(threshold_E_res_lower_value,target_qubit,n,M,B,J,t_max_starting_value,
 
 
 
+def plot_graph_adiabatic():
+    
+    def load_array(filename):
+        with open(filename, "r") as f:
+            return np.array([float(line.strip()) for line in f if line.strip()]) 
+
+    x_val_adiabatic = load_array("T_max_data_adiabatic.txt")
+    y_val_adiabatic = load_array("Minimum_gap_data_adiabatic.txt")
+
+    x_val_diabatic = load_array("T_max_data_redo.txt")
+    y_val_diabatic = load_array("Minimum_gap_data_redo.txt")
+
+    plt.scatter(x_val_adiabatic, y_val_adiabatic, label = "AQA")
+    plt.scatter(x_val_diabatic, y_val_diabatic, label = "DQA")
+    plt.legend()
+    plt.show()
+
+   
+# plot_graph_adiabatic()
+
+#plot both datasets for adiabatic and diabatic on the same graph ? and show very clearly the difference...
+
+        
 
 
+    
 
 
 
