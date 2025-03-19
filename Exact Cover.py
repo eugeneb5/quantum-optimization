@@ -1275,11 +1275,9 @@ for i in range(3):
 
     print("running instance "+str(i))
     
-    run(9)
+    run(6)
 
     
-run(8)
-run(8)
 
 
 #check if is saving properly...it might be doing the same thing again!
@@ -1312,7 +1310,7 @@ def plot_graph_adiabatic():
     plt.show()
 
    
-# plot_graph_adiabatic()
+plot_graph_adiabatic()
 
 #plot both datasets for adiabatic and diabatic on the same graph ? and show very clearly the difference...
 
