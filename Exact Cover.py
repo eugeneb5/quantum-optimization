@@ -20,7 +20,7 @@ import multiprocessing as mp
 
 
 
-def sigma_z(n,j): #must be that n>j
+def sigma_z(n,j): #must be that n>=j
 
 
 
@@ -48,7 +48,7 @@ def sigma_z(n,j): #must be that n>j
     return final
 
 
-def sigma_x(n,j): #must be that n>j
+def sigma_x(n,j): #must be that n>=j
 
     #assert n>j
      #j must be greater than two?
@@ -1271,13 +1271,13 @@ def run(n,rerun = False, save = True):
 
 # run(5, rerun = True, save = False)
 
-for i in range(3):
+# for i in range(3):
 
-    print("running instance "+str(i))
+#     print("running instance "+str(i))
     
-    run(6)
+#     run(8)
 
-    
+
 
 
 #check if is saving properly...it might be doing the same thing again!
@@ -1310,22 +1310,114 @@ def plot_graph_adiabatic():
     plt.show()
 
    
-plot_graph_adiabatic()
+# plot_graph_adiabatic()
 
 #plot both datasets for adiabatic and diabatic on the same graph ? and show very clearly the difference...
 
         
 
 
+
+
+
+#lets measure the point where there are phase transitions?--------------------------------------------------
     
 
 
+def phase_transition(target_qubit,t_max,n,M,B,J,AQA =False,q=100,r=1,first_excited_state = False):
+
+    initial_p_h = problem_hamiltonian_DQA(0,t_max,target_qubit,n,M,B,J)
+    initial_d_h = driver_hamiltonian_DQA(0,t_max,target_qubit,n,B)
+    initial_hamiltonian = initial_d_h+initial_p_h
+    eigenvectors = eigh(initial_hamiltonian)[1]
+    first_eigenvector = eigenvectors[:,0]
+   
+
+
+      #start the annealing process
+
+    dt = t_max/(q)
+    average_magnetisation_values = np.zeros((q+1,n), dtype = complex)  #index from 0 to q array
+
+    for i in range(0,q+1):
+
+        Hamiltonian_at_time_instance = problem_hamiltonian_DQA(i*dt,t_max,target_qubit,n,M,B,J)+driver_hamiltonian_DQA(i*dt,t_max,target_qubit,n,B)
+        
+        # state = np.dot(expm(-1j*dt*Hamiltonian_at_time_instance),state)
+        
+        # for qubit in range(1,n+1):  #we want to access indexes 0 to n-1
+
+        #     average_magnetisation = state@(sigma_z(n,qubit)@state)   #should be between -1 and 1!!? check this...
+
+        #     average_magnetisation_values[i,qubit-1] = average_magnetisation
+        
+        
+
+        if first_excited_state:
+            eigenvector =  eigh(Hamiltonian_at_time_instance)[1][:,1]
+        else:
+            eigenvector = eigh(Hamiltonian_at_time_instance)[1][:,0]
+
+
+        for qubit in range(1,n+1):  #we want to access indexes 0 to n-1
+
+             average_magnetisation = eigenvector@(sigma_z(n,qubit)@eigenvector)   #should be between -1 and 1!!? check this...
+
+             average_magnetisation_values[i,qubit-1] = average_magnetisation
+
+
+    x_val = np.linspace(0,1,q+1)
+
+    for qubit in range(n):
+
+        plt.plot(x_val, average_magnetisation_values[:,qubit], label = "qubit "+str(qubit+1))
+    # plt.plot(x_val, average_magnetisation_values[:,target_qubit-1])
+    plt.legend()
+    plt.show()
+
+
+
+
+
+
+       
+        
+n = 7
+target_qubit = 5
+t_max = 100
+
+
+# M, B, J, min_index = unique_satisfiability_problem_generation(n, ratio = 0.7, USA = True, satisfiability_ratio= True, DQA = True)   #save a problem!!!! and also try change the starting hamiltonian maybe??? adapt it perhaps!? solving the decision problem only requires that the final hamiltonian is 
+
+# np.savez("USA_values.npz", integer=M, array_1D=B, array_2D=J, index = min_index)
+# print("saved")
+
+
+
+
+data = np.load("USA_values.npz")
+M = data["integer"].item()
+B = data["array_1D"]
+J = data["array_2D"]
+min_index = data["index"].item()
+
+
+diabatic_test_eigenspectrum(target_qubit,t_max, n, M,B,J, number_of_eigenvalues=6)
+
+
+phase_transition(target_qubit,t_max,n,M,B,J, first_excited_state= False)
+
 
 
 
         
+#to do:
 
-        
+#try matching the first order QPT points to level crossings on the H spectrum
+# test for the convergence of the second first order QPT point as c_x value is changed - from adiabatic case? DO WE NEED TO DO THIS??... isolate that bit maybe? and ignore the starting trivial QPT...?
+
+#check the first and ground states and the orthogonality of the states as a function of s?  also just check the 0001111 etc state and locate the target qubit bit?? is this possible?? i.e we translate the eigenvector into a binary??
+
 
 
 
