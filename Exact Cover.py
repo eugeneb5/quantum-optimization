@@ -432,8 +432,10 @@ def problem_hamiltonian_DQA(t,t_max,target_qubit,n,M,B,J,s_x=0.2):
 
         if target_qubit == i:
             final_h += -0.5*b_coefficients_true(t,t_max,s_x)*(B[i-1]*sigma_z(n,i))
+            # print("done target_qubit "+ str(i))
         else:
             final_h += -0.5*b_coefficients_false(t,t_max,s_x)*B[i-1]*sigma_z(n,i)
+            # print("done normal qubit "+str(i))
 
     for k in range(1,n+1):
 
@@ -442,7 +444,7 @@ def problem_hamiltonian_DQA(t,t_max,target_qubit,n,M,B,J,s_x=0.2):
 
         for j in range(k+1,n+1):
 
-            if condition == True or j == target_qubit:   #loops have been designed such that there will be no overlap between these conditions!! 
+            if condition == True and j == target_qubit:   #loops have been designed such that there will be no overlap between these conditions!!  #changed or
 
                 final_h += 0.5*b_coefficients_true(t,t_max,s_x)*J[k-1,j-1]*(sigma_z(n,k)@sigma_z(n,j))  #just checked - this bit isn't working?
 
@@ -453,7 +455,28 @@ def problem_hamiltonian_DQA(t,t_max,target_qubit,n,M,B,J,s_x=0.2):
         condition = False #resets condition!
 
     return  M*I + final_h    #we haven't attached any of the conditions to M*I - since we are assuming it just moves the hamiltonian up and down anyways - so shouldn't affect anything??
+
+def init_psi_DQA(n, target_qubit, down = False):    #start with this wavefunction in the evolution!
+
+    Hadamard_state = (1/(2)**0.5)*np.array([1,-1])
+    up_state = np.array([1,0])
+    down_state = np.array([0,1])
+    initial = np.eye(1) # do we start off with identity??
+    for i in range(1,n+1):  
         
+        if i == target_qubit:
+            print("target_q test")
+            if down:
+                initial = np.kron(initial, down_state)
+            else:
+                initial = np.kron(initial,up_state)
+        else:
+            print("generic test")
+            initial = np.kron(initial, Hadamard_state)
+        
+    
+    return initial[0]
+    
 def diabatic_evolution_probability_plot(target_qubit, t_max,n, M,B,J,min_index, q=150, test_superposition_state = False,test_excited_state = False,plot_mode = True):   #change r to 1e9!
 
     #find the initial state
@@ -473,8 +496,11 @@ def diabatic_evolution_probability_plot(target_qubit, t_max,n, M,B,J,min_index, 
     if test_excited_state == True:
 
         state = second_eigenvector
+
+
+    #TEST THIS    
     
-    
+    # state = init_psi_DQA(n,target_qubit, down = True)  #it works!! BUT whether it's down or up for the target qubit depends on B!!!! so WORKS!!
     
     #find the comparison state
 
@@ -1319,6 +1345,12 @@ def plot_graph_adiabatic():
 
 
 
+
+
+
+
+
+
 #lets measure the point where there are phase transitions?--------------------------------------------------
     
 
@@ -1376,7 +1408,6 @@ def phase_transition(target_qubit,t_max,n,M,B,J,AQA =False,q=100,r=1,first_excit
     plt.legend()
     plt.show()
 
-
 def level_crossing_finder(target_qubit, n, M, B, J, q=1000):
 
 
@@ -1424,6 +1455,37 @@ def level_crossing_finder(target_qubit, n, M, B, J, q=1000):
     plt.plot(x_val, inner_product_array)
     plt.show()
 
+def init_psi_DQA(n, target_qubit, down = False):    #start with this wavefunction in the evolution!
+
+    Hadamard_state = (1/(2)**0.5)*np.array([1,-1])
+    up_state = np.array([1,0])
+    down_state = np.array([0,1])
+    initial = np.eye(1) # do we start off with identity??
+    for i in range(1,n+1):  
+        
+        if i == target_qubit:
+            print("target_q test")
+            if down:
+                initial = np.kron(initial, down_state)
+            else:
+                initial = np.kron(initial,up_state)
+        else:
+            print("generic test")
+            initial = np.kron(initial, Hadamard_state)
+        
+    
+    return initial[0]
+
+def init_psi(n):    #start with this wavefunction in the evolution!
+
+    up_state = (1/(2)**0.5)*np.array([1,1])
+
+    initial = up_state
+    for i in range(n-1):  #n-1 since 1 counts as its self...
+        initial = np.kron(initial,up_state)
+    
+    return initial
+
 
 # also want to check to find out the bit arrangement at those points in time? can we do it? its not going to be perfect 1s and zeros?
 # might have to do a method of bisection....! to get the crossing points, precisely... will be difficult since delta even with absolute will never go down to zero... would need to consider the first derivative...
@@ -1432,9 +1494,9 @@ def level_crossing_finder(target_qubit, n, M, B, J, q=1000):
 #redo the initial state thing - try make it!!! ourselves!! with target qubit in mind!! and check orthogonality etc!!
 
         
-n = 7
-target_qubit = 5
-t_max = 100
+# n = 7
+# target_qubit = 5
+# t_max = 100
 
 
 # M, B, J, min_index = unique_satisfiability_problem_generation(n, ratio = 0.7, USA = True, satisfiability_ratio= True, DQA = True)   #save a problem!!!! and also try change the starting hamiltonian maybe??? adapt it perhaps!? solving the decision problem only requires that the final hamiltonian is 
@@ -1445,21 +1507,57 @@ t_max = 100
 
 
 
-data = np.load("USA_values.npz")
-M = data["integer"].item()
-B = data["array_1D"]
-J = data["array_2D"]
-min_index = data["index"].item()
+# data = np.load("USA_values.npz")
+# M = data["integer"].item()
+# B = data["array_1D"]
+# J = data["array_2D"]
+# min_index = data["index"].item()
 
+# H_p = problem_hamiltonian(M,B,J,n)
 
-diabatic_test_eigenspectrum(target_qubit,t_max, n, M,B,J, number_of_eigenvalues=6)
+# Hamiltonian_spectrum(n,t_max,150,H_p)
+# diabatic_test_eigenspectrum(target_qubit,t_max, n, M,B,J, number_of_eigenvalues=6)
 # level_crossing_finder(target_qubit,n,M,B,J)
 # phase_transition(target_qubit,t_max,n,M,B,J, first_excited_state= False)
 
 
 
+# H = driver_hamiltonian_DQA(0,t_max,target_qubit,n,B) + problem_hamiltonian_DQA(0,t_max, target_qubit,n,M,B,J,s_x = 0.5)
+
+
+
+# state_1 = init_psi_DQA(n, target_qubit,down = True) #down
+# state_2 = init_psi_DQA(n,target_qubit)  #up
+# state_3 = init_psi(n) #control test
+
+
+
+
+# eig_1 = np.real(np.round(np.vdot((H@state_1),state_1)/np.linalg.norm(state_1)**2))
+# eig_2 = np.real(np.round(np.vdot((H@state_2),state_2)/np.linalg.norm(state_2)**2))
+
+# inner_product = np.vdot(state_1,state_2)
+
+# print("for down state: "+str(eig_1))
+# print("for up state: " +str(eig_2))
+# print("inner product is "+str(inner_product))  #SHOWS THEYRE ORTHOGONAL!!!
+
+
+# eig = eigh(H)[0][0]
+
+# print("directly off of H_initial, : "+str(eig))
+
+
+
 
         
+# diabatic_evolution_probability_plot(target_qubit,t_max,n,M,B,J,min_index)
+
+
+
+
+
+
 #to do:
 
 #try matching the first order QPT points to level crossings on the H spectrum
@@ -1482,12 +1580,102 @@ diabatic_test_eigenspectrum(target_qubit,t_max, n, M,B,J, number_of_eigenvalues=
 
 
 
-#dont worry too much about this stuff - a decent understanding of it is good enough for now... do fix the initial state thing tho! since that will go in understanding of the schedule... hadamard basis plus one spin up or down...whichever is lower energy...i.e. depends on starting hz field... - which is negative assuming all hz values are positive...
-#but use it now for the discussion! check the particular scenario recorded and degenerate cases!!
 
 
 
 
 
+#### testing specific case of interest!!!--------------------------------------------------------------
+
+clauses = np.array([[1,3,6],[3,4,6],[0,2,7],[1,3,7],[1,3,4],[0,3,5]])
 
 
+M = 6 #so clause to variable ratio of one
+n = 8
+target_qubit = 3
+t_max = 150
+q=500
+
+
+J = np.zeros((n,n))
+
+B = np.zeros(n)
+
+for i in range(len(clauses)):
+
+    for index_1, element_1 in enumerate(clauses[i]):
+
+        B[element_1] += 1
+
+        for element_2 in clauses[i][index_1+1:3]:
+               
+
+            J[element_1, element_2] +=1
+
+H = problem_hamiltonian(M,B,J,n)
+
+min_eigenvector = eigh(H)[1][:,0]
+
+min_index = 0
+
+for index, element in enumerate(np.abs(min_eigenvector)):
+
+    if element == 1:
+        
+        min_index = index
+        print(min_index)  #so 71 and 72 
+
+Hamiltonian_spectrum(n,t_max,q,H)
+
+diabatic_evolution_probability_plot(target_qubit,t_max,n,M,B,J,min_index)
+
+diabatic_test_eigenspectrum(target_qubit,t_max,n,M,B,J)
+
+
+
+
+n = 8
+t_max = 200
+t_max_starting_value = 10
+t_max_step = 10
+not_found = True
+target_qubit = 3
+threshold_E_res = 0.0104
+
+# while not_found:
+#     M, B, J, min_index = unique_satisfiability_problem_generation(n, USA = True, DQA = True)   #save a problem!!!! and also try change the starting hamiltonian maybe??? adapt it perhaps!? solving the decision problem only requires that the final hamiltonian is 
+
+#     np.savez("USA_values.npz", integer=M, array_1D=B, array_2D=J, index = min_index)
+#     print("saved")
+
+#     # H = problem_hamiltonian(M,B,J,n)
+
+#     # Hamiltonian_spectrum(n,t_max,q,H)
+
+#     probability = diabatic_evolution_probability_plot(target_qubit,t_max,n,M,B,J,min_index, plot_mode = False)
+
+#     if probability <= 0.97:
+#         print(probability)
+#         print("found!!")
+
+#         not_found = False
+#     else:
+#         print(probability)
+#         print("failed, doing again")
+#         continue
+
+
+
+# data = np.load("USA_values.npz")
+# M = data["integer"].item()
+# B = data["array_1D"]
+# J = data["array_2D"]
+# min_index = data["index"].item()
+# H = problem_hamiltonian(M,B,J,n)
+
+# Hamiltonian_spectrum(n,t_max,q,H)
+
+# E_res_DQA(threshold_E_res,target_qubit,n,M,B,J,t_max_starting_value,t_max_step)
+# E_res_AQA(threshold_E_res,n,M,B,J,t_max_starting_value,t_max_step)
+
+# diabatic_test_eigenspectrum(target_qubit,t_max,n,M,B,J)
