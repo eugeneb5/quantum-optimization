@@ -1309,7 +1309,6 @@ def plot_graph_adiabatic():
     plt.legend()
     plt.show()
 
-   
 # plot_graph_adiabatic()
 
 #plot both datasets for adiabatic and diabatic on the same graph ? and show very clearly the difference...
@@ -1370,17 +1369,68 @@ def phase_transition(target_qubit,t_max,n,M,B,J,AQA =False,q=100,r=1,first_excit
 
     for qubit in range(n):
 
+        # if not qubit == target_qubit-1:
+
         plt.plot(x_val, average_magnetisation_values[:,qubit], label = "qubit "+str(qubit+1))
     # plt.plot(x_val, average_magnetisation_values[:,target_qubit-1])
     plt.legend()
     plt.show()
 
 
+def level_crossing_finder(target_qubit, n, M, B, J, q=1000):
 
 
+    dt = t_max/(q)
+    # delta = np.zeros(q+1, dtype = complex)  #index from 0 to q array
+    
+    inner_product_array = np.zeros(q+1, dtype = complex)  #0 to q
+    # previous_ground_eigenvector = np.zeros(2**n, dtype = complex)
+
+    initial_hamiltonian = problem_hamiltonian_DQA(0,t_max,target_qubit,n,M,B,J)+driver_hamiltonian_DQA(0,t_max,target_qubit,n,B)
+
+    previous_state = eigh(initial_hamiltonian)[1][:,0]
 
 
-       
+    for i in range(0,q+1):
+
+        Hamiltonian_at_time_instance = problem_hamiltonian_DQA(i*dt,t_max,target_qubit,n,M,B,J)+driver_hamiltonian_DQA(i*dt,t_max,target_qubit,n,B)
+
+        eigenvalues,eigenvectors = eigh(Hamiltonian_at_time_instance)
+
+        ground = eigenvectors[:,0]
+        first = eigenvectors[:,1]
+
+        ground_eig = eigenvalues[0]
+        first_eig = eigenvalues[1]
+
+        comparison = (np.vdot(previous_state, ground))**2
+
+        delta = np.abs(first_eig-ground_eig)
+
+        if np.isclose(delta, 0):  #do we add tolerance ourselves??
+
+            print("found level crossing at s= "+str((i*dt)/t_max))
+
+
+        previous_state = ground
+
+        # H_perturbation = driver_hamiltonian_DQA(i*dt,t_max,target_qubit,n,B)
+        # transition_probability = np.abs(first@(H_perturbation@ground))**2  #because of small numerical errors?? we don't get perfect...? e.g. in eig? maybe try a 
+
+        inner_product_array[i] = comparison
+
+    x_val = np.linspace(0,1,q+1)
+
+    plt.plot(x_val, inner_product_array)
+    plt.show()
+
+
+# also want to check to find out the bit arrangement at those points in time? can we do it? its not going to be perfect 1s and zeros?
+# might have to do a method of bisection....! to get the crossing points, precisely... will be difficult since delta even with absolute will never go down to zero... would need to consider the first derivative...
+
+
+#redo the initial state thing - try make it!!! ourselves!! with target qubit in mind!! and check orthogonality etc!!
+
         
 n = 7
 target_qubit = 5
@@ -1403,9 +1453,8 @@ min_index = data["index"].item()
 
 
 diabatic_test_eigenspectrum(target_qubit,t_max, n, M,B,J, number_of_eigenvalues=6)
-
-
-phase_transition(target_qubit,t_max,n,M,B,J, first_excited_state= False)
+# level_crossing_finder(target_qubit,n,M,B,J)
+# phase_transition(target_qubit,t_max,n,M,B,J, first_excited_state= False)
 
 
 
@@ -1418,17 +1467,23 @@ phase_transition(target_qubit,t_max,n,M,B,J, first_excited_state= False)
 
 #check the first and ground states and the orthogonality of the states as a function of s?  also just check the 0001111 etc state and locate the target qubit bit?? is this possible?? i.e we translate the eigenvector into a binary??
 
+#IT WORKS!! and could we check what the states are maybe?? maybe not....might just have to keep to this pattern of orthogonality!! but makes sense now!!
+#compare to AQA example maybe?
+#at points where inner product goes to zero - check!
+#THINK OF AS TENSOR PRODUCTS?? tensor products of many different superpositions (i.e alpha*up +beta*down etc...) - except one is -1 and other is 1 and these are orthogonal?
 
+#how could we fit in idea of spin flips? check the paper that does it with q?
 
+#AND THE IDEA OF FIRST ORDER PHASE TRANSITIONS FITS IN REALLY NICELY WITH THIS!! we dont get the second first order QPT sometimes because of the criterion mentioned in the paper not being met?? try check this!!
 
-
-
-
-
+#we may not need to quantatively apply the idea - but can see the curvature of the one above is visibly less than the one below in cases where no frustration occurs!
     
 
 
 
+
+#dont worry too much about this stuff - a decent understanding of it is good enough for now... do fix the initial state thing tho! since that will go in understanding of the schedule... hadamard basis plus one spin up or down...whichever is lower energy...i.e. depends on starting hz field... - which is negative assuming all hz values are positive...
+#but use it now for the discussion! check the particular scenario recorded and degenerate cases!!
 
 
 
