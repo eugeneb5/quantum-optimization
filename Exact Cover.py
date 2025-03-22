@@ -254,7 +254,7 @@ def Time_dependent_Hamiltonian(n,t,t_max,H_p):
     return H_t
 
 
-def Hamiltonian_spectrum(n,t_max,q,H_p,number_of_eigenvalues = 2):
+def Hamiltonian_spectrum(n,t_max,q,H_p,number_of_eigenvalues = 2, plot_mode = True):
 
     if number_of_eigenvalues < 2:
         print("terminating program, number_of_eigenvalues entry incorrect")
@@ -278,16 +278,20 @@ def Hamiltonian_spectrum(n,t_max,q,H_p,number_of_eigenvalues = 2):
 
     x_val = np.linspace(0,1,q+1)
     eigenvalue_difference = eigenvalues_set[:,1]-eigenvalues_set[:,0]  #this assumes number of eigen_values is at least 2
-    print("min. eigenvalue difference is "+str(np.min(eigenvalue_difference)))
+    delta_min = np.min(eigenvalue_difference)
+    print("min. eigenvalue difference is "+str(delta_min))
 
-    plt.title("Example problem Hamiltonian eigenvalue Spectrum")
-    for index in eigenvalue_range:
-        plt.plot(x_val, eigenvalues_set[:,index], label = "eigenvalue "+str(index+1))
-    plt.xlabel("Time parameter , s")
-    plt.ylabel("Energy eigenvalue")
-    plt.xticks([0,0.5,1])
-    plt.legend()
-    plt.show()
+    if plot_mode:
+
+        plt.title("Example problem Hamiltonian eigenvalue Spectrum")
+        for index in eigenvalue_range:
+            plt.plot(x_val, eigenvalues_set[:,index], label = "eigenvalue "+str(index+1))
+        plt.xlabel("Time parameter , s")
+        plt.ylabel("Energy eigenvalue")
+        plt.xticks([0,0.5,1])
+        plt.legend()
+        plt.show()
+    return delta_min
 
         
 def adiabatic_probability(n,t_max,M,B,J,q=150):
@@ -1587,49 +1591,55 @@ def init_psi(n):    #start with this wavefunction in the evolution!
 
 #### testing specific case of interest!!!--------------------------------------------------------------
 
-clauses = np.array([[1,3,6],[3,4,6],[0,2,7],[1,3,7],[1,3,4],[0,3,5]])
+# clauses = np.array([[0,4,5],[0,4,6],[0,2,4],[2,4,6],[0,4,7],[0,2,7],[0,1,3],[3,4,7]])  #this is a particular degenerate case - understand why we're unable to solve?? in theory the E_res should go towards zero regardless...?
 
 
-M = 6 #so clause to variable ratio of one
-n = 8
-target_qubit = 3
-t_max = 150
-q=500
+# n = 8
+# target_qubit = 5
+# t_max = 50
+# q=500
 
+def problem_generation_from_clauses(n,clauses):
+    M = len(clauses)
+    J = np.zeros((n,n))
 
-J = np.zeros((n,n))
+    B = np.zeros(n)
 
-B = np.zeros(n)
+    for i in range(M):
 
-for i in range(len(clauses)):
+        for index_1, element_1 in enumerate(clauses[i]):
 
-    for index_1, element_1 in enumerate(clauses[i]):
+            B[element_1] += 1
 
-        B[element_1] += 1
-
-        for element_2 in clauses[i][index_1+1:3]:
+            for element_2 in clauses[i][index_1+1:3]:
                
 
-            J[element_1, element_2] +=1
+                J[element_1, element_2] +=1
 
-H = problem_hamiltonian(M,B,J,n)
+    H = problem_hamiltonian(M,B,J,n)
 
-min_eigenvector = eigh(H)[1][:,0]
+    min_eigenvector = eigh(H)[1][:,0]
 
-min_index = 0
+    min_index = 0
 
-for index, element in enumerate(np.abs(min_eigenvector)):
+    for index, element in enumerate(np.abs(min_eigenvector)):
 
-    if element == 1:
+        if element == 1:
         
-        min_index = index
-        print(min_index)  #so 71 and 72 
+            min_index = index
+            # print(min_index)  #so 71 and 72 
 
-Hamiltonian_spectrum(n,t_max,q,H)
+    return M,B,J,min_index
 
-diabatic_evolution_probability_plot(target_qubit,t_max,n,M,B,J,min_index)
 
-diabatic_test_eigenspectrum(target_qubit,t_max,n,M,B,J)
+# M,B,J,min_index = problem_generation_from_clauses(n,clauses)
+# # Hamiltonian_spectrum(n,t_max,q,H)
+
+# # diabatic_evolution_probability_plot(target_qubit,t_max,n,M,B,J,min_index)
+
+# # E_res_DQA(0.014,target_qubit,n,M,B,J,10,2,q=200)   #doesn't work - it alternates between the two value bounds...explain why maybe???
+
+# diabatic_test_eigenspectrum(target_qubit,t_max,n,M,B,J)
 
 
 
@@ -1639,30 +1649,30 @@ t_max = 200
 t_max_starting_value = 10
 t_max_step = 10
 not_found = True
-target_qubit = 3
+target_qubit = 6
 threshold_E_res = 0.0104
 
-# while not_found:
-#     M, B, J, min_index = unique_satisfiability_problem_generation(n, USA = True, DQA = True)   #save a problem!!!! and also try change the starting hamiltonian maybe??? adapt it perhaps!? solving the decision problem only requires that the final hamiltonian is 
+while not_found:
+    M, B, J, min_index = unique_satisfiability_problem_generation(n, USA = True, DQA = True)   #save a problem!!!! and also try change the starting hamiltonian maybe??? adapt it perhaps!? solving the decision problem only requires that the final hamiltonian is 
 
-#     np.savez("USA_values.npz", integer=M, array_1D=B, array_2D=J, index = min_index)
-#     print("saved")
+    np.savez("USA_values.npz", integer=M, array_1D=B, array_2D=J, index = min_index)
+    print("saved")
 
-#     # H = problem_hamiltonian(M,B,J,n)
+    H = problem_hamiltonian(M,B,J,n)
 
-#     # Hamiltonian_spectrum(n,t_max,q,H)
+    delta_min = Hamiltonian_spectrum(n,t_max,q,H, plot_mode = False)
 
-#     probability = diabatic_evolution_probability_plot(target_qubit,t_max,n,M,B,J,min_index, plot_mode = False)
 
-#     if probability <= 0.97:
-#         print(probability)
-#         print("found!!")
+    if delta_min <= 0.19:
+        print(delta_min)
+        print("found a small gap problem!")
+        not_found = False
+    else:
+        print(delta_min)
+        print("failed, doing again")
+        continue
 
-#         not_found = False
-#     else:
-#         print(probability)
-#         print("failed, doing again")
-#         continue
+
 
 
 
@@ -1671,11 +1681,25 @@ threshold_E_res = 0.0104
 # B = data["array_1D"]
 # J = data["array_2D"]
 # min_index = data["index"].item()
-# H = problem_hamiltonian(M,B,J,n)
 
-# Hamiltonian_spectrum(n,t_max,q,H)
 
-# E_res_DQA(threshold_E_res,target_qubit,n,M,B,J,t_max_starting_value,t_max_step)
-# E_res_AQA(threshold_E_res,n,M,B,J,t_max_starting_value,t_max_step)
+###set of problem clauses that are interesting...
+
+#clauses_3 = np.array([[4,5,6],[0,1,7],[0,4,7],[1,2,5],[3,6,7],[2,6,7]])  #t_max = 92, min_gap = 0.129
+
+
+
+
+
+
+# M,B,J,min_index = problem_generation_from_clauses(n,clauses_3)
+
+H = problem_hamiltonian(M,B,J,n)
+
+Hamiltonian_spectrum(n,t_max,q,H)
 
 # diabatic_test_eigenspectrum(target_qubit,t_max,n,M,B,J)
+
+# E_res_DQA(threshold_E_res,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,q=200)
+# E_res_AQA(threshold_E_res,n,M,B,J,t_max_starting_value,t_max_step)
+
