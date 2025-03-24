@@ -2140,7 +2140,7 @@ def E_res_AQA_ratio_test(E_res_threshold,n,M,B,J, t_max_starting_value,t_max_ste
 
 
 
-def run(n,rerun = False, save = True):
+def run_ratio(n,rerun = False, save = True):
     t_max_starting_value = 1
     t_max_step = 10
     threshold_E_res = 0.0104
@@ -2224,21 +2224,21 @@ def run(n,rerun = False, save = True):
     # diabatic_test_eigenspectrum(target_qubit,t_max_test,n,M,B,J,number_of_eigenvalues=6,q=q)
 
     print("now finding optimal t_max for threshold E_res")
-    optimal_t_max = E_res_DQA_ratio_test(threshold_E_res,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode = save)
+    E_res_DQA_ratio_test(threshold_E_res,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode = save)
 
     #for upperbound now
-    print("doing the upper bound calculation")
+    # print("doing the upper bound calculation")
 
-    t_max_starting_value = round(optimal_t_max) 
+    # t_max_starting_value = round(optimal_t_max) 
 
-    E_res_DQA_ratio_test(threshold_E_res_upper_value,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode = save,save_upper=True)
+    # E_res_DQA_ratio_test(threshold_E_res_upper_value,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode = save,save_upper=True)
 
     #for lower bound
-    print("doing lower bound now")
+    # print("doing lower bound now")
 
-    t_max_starting_value = round(optimal_t_max) 
+    # t_max_starting_value = round(optimal_t_max) 
 
-    E_res_DQA_ratio_test(threshold_E_res_lower_value,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode= save,save_lower=True)
+    # E_res_DQA_ratio_test(threshold_E_res_lower_value,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode= save,save_lower=True)
 
 
 
@@ -2249,30 +2249,28 @@ def run(n,rerun = False, save = True):
     t_max_starting_value = 1  #need to redefine here again
     print("doing AQA simulation now")
 
-    optimal_t_max = E_res_AQA_ratio_test(threshold_E_res,n,M,B,J,t_max_starting_value,t_max_step=10,save_mode=save)
+    E_res_AQA_ratio_test(threshold_E_res,n,M,B,J,t_max_starting_value,t_max_step=10,save_mode=save)
 
-    t_max_starting_value = round(optimal_t_max) 
+    # t_max_starting_value = round(optimal_t_max) 
 
-    E_res_AQA_ratio_test(threshold_E_res_upper_value,n,M,B,J,t_max_starting_value,t_max_step=10,save_mode=save,save_upper = True)   #for upperbound E_res
+    # E_res_AQA_ratio_test(threshold_E_res_upper_value,n,M,B,J,t_max_starting_value,t_max_step=10,save_mode=save,save_upper = True)   #for upperbound E_res
 
-    E_res_AQA_ratio_test(threshold_E_res_lower_value,n,M,B,J,t_max_starting_value,t_max_step=10,save_mode=save, save_lower = True)  #lowerbound
-
-
-
-
-
-
-run(6)
+    # E_res_AQA_ratio_test(threshold_E_res_lower_value,n,M,B,J,t_max_starting_value,t_max_step=10,save_mode=save, save_lower = True)  #lowerbound
 
 
 
 
 
+for i in range(10):
+    
+    
+    run_ratio(8)
 
 
 
+#after, try testing for degenerate cases - make sure not to save etc... - we want to add since we've considered E_Res!!
 
-
+#there's a limit on what we can do to begin with....
 
 
 
@@ -2280,4 +2278,11 @@ run(6)
 
 
 
-#lol
+
+
+
+
+
+
+
+#####
