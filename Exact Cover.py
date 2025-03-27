@@ -15,6 +15,7 @@ from scipy.optimize import curve_fit
 import math
 import sys
 import multiprocessing as mp
+from scipy.linalg import svdvals
 
 
 
@@ -781,17 +782,17 @@ def E_res_DQA(E_res_threshold,target_qubit,n,M,B,J, t_max_starting_value,t_max_s
     initial_hamiltonian = initial_d_h+initial_p_h
     ground_state_eigenvector = eigh(initial_hamiltonian)[1][:,0]
     H_problem = problem_hamiltonian(M,B,J,n)    
-    file_1 = "Minimum_gap_data_redo.txt"
-    file_2 = "T_max_data_redo.txt"
-    file_3 = "problem_dimension_redo.txt"
+    # file_1 = "Minimum_gap_data_redo.txt"
+    file_2 = "norm_test_T_max.txt"
+    # file_3 = "problem_dimension_redo.txt"
 
     if save_upper:
-        file_1 = "Minimum_gap_data_upper_bound_redo.txt"   #just to fill the space, we don't really need this otherwise
-        file_2 = "T_max_upper_bound_data_redo.txt"
+        # file_1 = "Minimum_gap_data_upper_bound_redo.txt"   #just to fill the space, we don't really need this otherwise
+        file_2 = "norm_test_T_max_U.txt"
     
     elif save_lower:
-        file_1 = "Minimum_gap_data_lower_bound_redo.txt"   #just to fill the space, we don't really need this otherwise
-        file_2 = "T_max_lower_bound_data_redo.txt"
+        # file_1 = "Minimum_gap_data_lower_bound_redo.txt"   #just to fill the space, we don't really need this otherwise
+        file_2 = "norm_test_T_max_L.txt"
 
     #find E_0
 
@@ -805,17 +806,18 @@ def E_res_DQA(E_res_threshold,target_qubit,n,M,B,J, t_max_starting_value,t_max_s
     #does gap size change with t_max??  NO, it doesn't change so can check min_gap
 
     dt = t_max_starting_value/(q)
-    eigenvalue_difference = np.zeros(q+1)
+    # eigenvalue_difference = np.zeros(q+1)
     
 
-    for i in range(0,q+1):
-         h = Time_dependent_Hamiltonian(n,dt*i,t_max_starting_value,H_problem)
-         instantaneous_eigenvalues_set = eigh(h)[0]
-         eigenvalue_difference[i] = abs(instantaneous_eigenvalues_set[1]-instantaneous_eigenvalues_set[0])
+    # for i in range(0,q+1):
+    #      h = Time_dependent_Hamiltonian(n,dt*i,t_max_starting_value,H_problem)
+    #      instantaneous_eigenvalues_set = eigh(h)[0]
+    #      eigenvalue_difference[i] = abs(instantaneous_eigenvalues_set[1]-instantaneous_eigenvalues_set[0])
     
-    minimum_gap_size = np.min(eigenvalue_difference)
-    print("minimum gap size is: "+str(minimum_gap_size))
+    # minimum_gap_size = np.min(eigenvalue_difference)
+    # print("minimum gap size is: "+str(minimum_gap_size))
 
+    
     #initialize annealing:
     not_found = True
 
@@ -848,7 +850,7 @@ def E_res_DQA(E_res_threshold,target_qubit,n,M,B,J, t_max_starting_value,t_max_s
         if np.isclose(E_res,E_res_threshold, rtol = 0.001):   #how accurate could we get it?
 
             print("the critical t_max value is: "+str(t_max)+" with residual energy of: "+str(E_res))
-            print("the corresponding minimum gap size is "+str(minimum_gap_size))
+            # print("the corresponding minimum gap size is "+str(minimum_gap_size))
             not_found = False
             continue
 
@@ -906,17 +908,22 @@ def E_res_DQA(E_res_threshold,target_qubit,n,M,B,J, t_max_starting_value,t_max_s
         
     if save_mode:
        
-        with open(file_1, "a") as f1, open(file_2,"a") as f2, open(file_3, "a") as f3:
-            f1.write(f"{minimum_gap_size}\n")  # Append single value to array1.txt
+        # with open(file_1, "a") as f1, open(file_2,"a") as f2, open(file_3, "a") as f3:
+        #     f1.write(f"{minimum_gap_size}\n")  # Append single value to array1.txt
+        #     f2.write(f"{t_max}\n")
+        #     if not save_lower and not save_upper:
+        #         f3.write(f"{n}\n")
+        # print("saved values")
+        with open(file_2, "a") as f2:
+
             f2.write(f"{t_max}\n")
-            if not save_lower and not save_upper:
-                f3.write(f"{n}\n")
-        print("saved values")
+        print("saved t_max value")
 
 
 
 
-    return minimum_gap_size, E_res, t_max
+
+    return t_max
 
 def E_res_test_adiabatic(n,M,B,J,t_max,num,min_index,q=400,save_mode = False):
 
@@ -1833,7 +1840,7 @@ clauses_8 = np.array([[0,4,5],[0,3,5],[0,1,5],[2,3,4],[1,3,5]]) #n=6, target qub
 
 # n=10
 
-n=6
+n=8
 q = 10000
 t_max_AQA = 400
 t_max = 100
@@ -1844,23 +1851,23 @@ target_qubit = 3
 # np.savez("USA_values.npz", integer=M, array_1D=B, array_2D=J, index = min_index)
 # print("saved")
 
-data = np.load("USA_values.npz")
-M = data["integer"].item()
-B = data["array_1D"]
-J = data["array_2D"]
-min_index = data["index"].item()
+# data = np.load("USA_values.npz")
+# M = data["integer"].item()
+# B = data["array_1D"]
+# J = data["array_2D"]
+# min_index = data["index"].item()
 
 
 #we are doing for AQA first....
 
 
-q_param = np.linspace(100,10000,100).astype(int)
-t_param = np.linspace(10,400,100).astype(int)
+# q_param = np.linspace(100,10000,100).astype(int)
+# t_param = np.linspace(10,400,100).astype(int)
 
-# print(q_param)
+# # print(q_param)
 
-n_q = 100
-n_t = 100
+# n_q = 100
+# n_t = 100
 
 # print(max_error_estimation_AQA(q,t_max_AQA,n,M,B,J))
 
@@ -1872,35 +1879,35 @@ n_t = 100
 
 
 
-error_results_AQA = np.zeros((n_q,n_t))
+# error_results_AQA = np.zeros((n_q,n_t))
 
-for index_q, q in enumerate(q_param):  #y
-    print(index_q)
+# for index_q, q in enumerate(q_param):  #y
+#     print(index_q)
 
-    for index_t, t in enumerate(t_param):  #x
+#     for index_t, t in enumerate(t_param):  #x
 
-        err = max_error_estimation_AQA(q,t,n,M,B,J)
+#         err = max_error_estimation_AQA(q,t,n,M,B,J)
 
-        if err > 1:
-            err = 1
-        error_results_AQA[index_q,index_t] = err**2
+#         if err > 1:
+#             err = 1
+#         error_results_AQA[index_q,index_t] = err**2
 
-plt.figure(figsize=(8, 6))
-plt.imshow(error_results_AQA, origin='lower', cmap='RdBu_r', aspect='auto')
-plt.colorbar()
-# plt.xlabel('t_max')
-# plt.ylabel('q')
+# plt.figure(figsize=(8, 6))
+# plt.imshow(error_results_AQA, origin='lower', cmap='RdBu_r', aspect='auto')
+# plt.colorbar()
+# # plt.xlabel('t_max')
+# # plt.ylabel('q')
 
-x_ticks = [0, len(t_param) // 2, len(t_param) - 1]
-y_ticks = [0, len(q_param) // 2, len(q_param) - 1]
+# x_ticks = [0, len(t_param) // 2, len(t_param) - 1]
+# y_ticks = [0, len(q_param) // 2, len(q_param) - 1]
 
-# Optional: set tick labels to actual param values
-plt.xticks(ticks=x_ticks, labels=t_param[x_ticks])
-plt.yticks(ticks=y_ticks, labels=q_param[y_ticks])
+# # Optional: set tick labels to actual param values
+# plt.xticks(ticks=x_ticks, labels=t_param[x_ticks])
+# plt.yticks(ticks=y_ticks, labels=q_param[y_ticks])
 
 
-plt.savefig('my_plot.png')
-plt.show()
+# plt.savefig('my_plot.png')
+# plt.show()
 
 
 
@@ -2539,6 +2546,226 @@ def run_ratio(n,rerun = False, save = True):
 #changing B changes position of phase transitions, but not the fact that phase transitions don't happen?!
 
 #is it worth exploring as a potential fix?
+
+
+
+
+
+####measure change in Hamiltonian, normed!
+
+
+
+def spectral_norm_DQA(n,t_max,target_qubit,M,B,J,q=10,plot=True):
+
+    dt = t_max/q
+
+    norm_values = np.zeros(q)
+
+    for i in range(0,q):  #i.e. going from 0 to q-1
+
+        Hamiltonian_before = problem_hamiltonian_DQA(i*dt,t_max,target_qubit,n,M,B,J)+driver_hamiltonian_DQA(i*dt,t_max,target_qubit,n,B)
+        Hamiltonian_after = problem_hamiltonian_DQA((i+1)*dt,t_max,target_qubit,n,M,B,J)+driver_hamiltonian_DQA((i+1)*dt,t_max,target_qubit,n,B)  #so final one will be q
+
+        A = (Hamiltonian_after - Hamiltonian_before)/dt   #rough derivative definition...so higher q, more precise this will be...
+
+        svals = svdvals(A)
+        norm_values[i] = svals[0]
+
+    if plot:
+
+        x_val = np.linspace(0,1,q)
+
+        plt.plot(x_val,norm_values)
+        plt.show()
+
+    return np.max(norm_values)
+
+    
+def spectral_norm_AQA(n,t_max,M,B,J,q=10):
+
+    dt = t_max/q
+
+    H_p = problem_hamiltonian(M,B,J,n)
+
+    norm_values = np.zeros(q)
+
+    for i in range(0,q):  #i.e. going from 0 to q-1
+
+        Hamiltonian_before = Time_dependent_Hamiltonian(n,i*dt,t_max,H_p)
+        Hamiltonian_after = Time_dependent_Hamiltonian(n,(i+1)*dt,t_max,H_p) #so final one will be q
+
+        A = (Hamiltonian_after - Hamiltonian_before)/dt   #rough derivative definition...so higher q, more precise this will be...
+
+        svals = svdvals(A)
+        norm_values[i] = svals[0]
+
+    x_val = np.linspace(0,1,q)
+
+    plt.plot(x_val,norm_values)
+    plt.show()
+
+    return np.max(norm_values)
+
+
+
+
+
+
+# max_norm = spectral_norm_DQA(n,t_max,target_qubit,M,B,J,q=10)
+# max_norm_2 = spectral_norm_AQA(n,t_max,M,B,J,q=10)
+
+# print(max_norm)
+# print(max_norm_2)
+
+
+
+
+
+#is it worth measuring then the variation in spectral norm with n? NO - we can just do spectral norm with T_max! for DQA!!
+#it might be worth verifying a rough 
+#but fact we see a very clean 1/x^2 relation for AQA in other graph - means min gap size is the 'stronger', more limiting condition - which confirms O(N) vs O(>exp(N)) comp time dependecnies!!!
+
+
+def run_norm_DQA(n,rerun = False, save = True):
+    t_max_starting_value = 1
+    t_max_step = 10
+    threshold_E_res = 0.0104
+    threshold_E_res_upper_value = 0.0112
+    threshold_E_res_lower_value = 0.0097  #these values are fixed/ rounded
+
+
+    
+    target_qubit_range = np.linspace(1,n,n,dtype = int)
+    print(target_qubit_range)
+    t_max_test = 100
+    q = 400
+
+    if not rerun:
+        M, B, J, min_index = unique_satisfiability_problem_generation(n, ratio = 1.4, USA = True, satisfiability_ratio= True, DQA = True)
+        np.savez("USA_values.npz", integer=M, array_1D=B, array_2D=J, index = min_index)
+        print("generated random problem")
+
+    if rerun:
+        data = np.load("USA_values.npz")
+        M = data["integer"].item()
+        B = data["array_1D"]
+        J = data["array_2D"]
+        min_index = data["index"].item()
+        print("reloaded previous problem")
+
+    
+
+    H = problem_hamiltonian(M,B,J,n)
+
+    # Hamiltonian_spectrum(n, t_max, q, H, number_of_eigenvalues = 6)
+
+    ######----------------------checking degeneracy
+
+    eigenvalues = eigh(H)[0]
+
+    min_eigenvalue = np.min(eigenvalues)
+
+    degeneracy = 0
+
+    for i in eigenvalues:
+
+        if i == min_eigenvalue:
+            degeneracy += 1
+
+
+    print("random problem degeneracy is "+str(degeneracy))
+
+
+    ####-----------------------------------------------find successful target_qubit
+
+
+    incompatible_problem= True
+    index_target_qubit = 0
+    fail = False
+
+    while incompatible_problem:
+        if index_target_qubit > n:
+            print("unsuccessful problem, quitting program")
+            fail = True
+            update_counter("number_of_times_failed.txt",fail)
+            log_integer("failed_problems_ratio.txt",M)
+            sys.exit()
+        target_qubit = target_qubit_range[index_target_qubit]
+        print("testing with qubit "+str(target_qubit))
+        final_probability = diabatic_evolution_probability_plot(target_qubit, t_max_test, n,M,B,J,min_index, plot_mode = False)
+        if final_probability > 1/(degeneracy+1) or np.isclose(final_probability, (1/(degeneracy+1))):
+
+            print("found successful problem with target qubit "+str(target_qubit)+"with success probability of: "+str(final_probability))
+
+            incompatible_problem = False
+            continue
+        else:
+            index_target_qubit += 1
+
+    ###------------------------------------------now find optimal t_max
+
+    
+
+    target_qubit = target_qubit_range[index_target_qubit]
+    # diabatic_test_eigenspectrum(target_qubit,t_max_test,n,M,B,J,number_of_eigenvalues=6,q=q)
+
+    print("now finding optimal t_max for threshold E_res")
+    optimal_t_max = E_res_DQA(threshold_E_res,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode = save)
+
+    #for upperbound now
+    print("doing the upper bound calculation")
+
+    t_max_starting_value = round(optimal_t_max) 
+
+    E_res_DQA(threshold_E_res_upper_value,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode = save,save_upper=True)
+
+    #for lower bound
+    print("doing lower bound now")
+
+    t_max_starting_value = round(optimal_t_max) 
+
+    E_res_DQA(threshold_E_res_lower_value,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,save_mode= save,save_lower=True)
+
+
+    #now to save norm value:
+
+    norm = spectral_norm_DQA(n,optimal_t_max,target_qubit,M,B,J,q=10,plot=False)
+    print("the norm is "+str(norm))
+    print("with M " +str(M) )
+    print("for dimension, n "+str(n))
+
+    file_name_1 = "norm_data_norm.txt"
+    file_name_2 = "norm_data_M.txt"
+    file_name_3 = "norm_data_n.txt"
+    if save:
+
+        with open(file_name_1, "a") as f1, open(file_name_2, "a") as f2, open(file_name_3,"a") as f3 :
+
+                f1.write(f"{norm}\n")
+                f2.write(f"{M}\n")
+                f3.write(f"{n}\n")
+        print("saved norm,M,n values")
+
+
+
+    #####then initialise for AQA!----------------------------------------------------------------------------------------
+
+
+
+   
+
+for i in range(10):
+
+    run_norm_DQA(6, save=True)
+
+    run_norm_DQA(7, save=True)
+
+
+
+
+
+
+
 
 
 
