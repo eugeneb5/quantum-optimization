@@ -1228,7 +1228,7 @@ def max_error_estimation(k,t_max,n,M):
 #TEST ----------------
 n = 5
 M = np.array([[0,1,1,0,0],[0,0,1,0,1],[0,0,0,1,1],[0,0,0,0,0],[0,0,0,0,0]])
-t_max = 18
+t_max = 20
 
-print(max_error_estimation(200,t_max,n,M))
+print(max_error_estimation(100,t_max,n,M))
 

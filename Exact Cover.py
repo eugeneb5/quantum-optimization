@@ -416,9 +416,9 @@ def driver_hamiltonian_DQA(t,t_max, target_qubit,n,B,s_x=0.2):  #is only for a s
     final_h = np.zeros((2**n,2**n))
     for i in range(1,n+1):   #could make this bit more efficient?
         if i == target_qubit:
-           final_h += a_coefficients_true(t,t_max,s_x)*1*sigma_x(n,i)
+           final_h += a_coefficients_true(t,t_max,s_x)*sigma_x(n,i)
         else:
-            final_h += a_coefficients_false(t,t_max,s_x)*1*sigma_x(n,i)
+            final_h += a_coefficients_false(t,t_max,s_x)*sigma_x(n,i)
     return final_h
 
 def problem_hamiltonian_DQA(t,t_max,target_qubit,n,M,B,J,s_x=0.2):
@@ -458,7 +458,7 @@ def problem_hamiltonian_DQA(t,t_max,target_qubit,n,M,B,J,s_x=0.2):
 
         condition = False #resets condition!
 
-    return  M*I + final_h    #we haven't attached any of the conditions to M*I - since we are assuming it just moves the hamiltonian up and down anyways - so shouldn't affect anything??
+    return  M*I+ final_h    #we haven't attached any of the conditions to M*I - since we are assuming it just moves the hamiltonian up and down anyways - so shouldn't affect anything??
 
 def init_psi_DQA(n, target_qubit, down = False):    #start with this wavefunction in the evolution!
 
@@ -1331,11 +1331,34 @@ def plot_graph_adiabatic():
     x_val_adiabatic = load_array("T_max_data_adiabatic.txt")
     y_val_adiabatic = load_array("Minimum_gap_data_adiabatic.txt")
 
+    x_upper_adiabatic = load_array("T_max_lower_bound_data_adiabatic.txt")
+    x_lower_adiabatic = load_array("T_max_upper_bound_data_adiabatic.txt")
+
+
     x_val_diabatic = load_array("T_max_data_redo.txt")
     y_val_diabatic = load_array("Minimum_gap_data_redo.txt")
 
-    plt.scatter(x_val_adiabatic, y_val_adiabatic, label = "AQA")
-    plt.scatter(x_val_diabatic, y_val_diabatic, label = "DQA")
+    x_upper_diabatic = load_array("T_max_lower_bound_data_redo.txt")
+    x_lower_diabatic = load_array("T_max_upper_bound_data_redo.txt")
+
+
+    #for adiabatic first:
+    n = len(x_val_adiabatic)
+    x_err_adiabatic = np.zeros((n,2))
+    for i in range(n):
+
+        x_err_adiabatic[i,0] = abs(x_val_adiabatic[i] - x_lower_adiabatic[i])  #0 index is lower
+        x_err_adiabatic[i,1] = abs(x_val_adiabatic[i] - x_lower_adiabatic[i])    #1 index is higher
+    
+    #for diabatic:
+    n = len(x_val_diabatic)
+    x_err_diabatic = np.zeros((n,2))
+    for i in range(n):
+
+        x_err_diabatic[i,0] = abs(x_val_diabatic[i] - x_lower_diabatic[i])  #0 index is lower
+        x_err_diabatic[i,1] = abs(x_val_diabatic[i] - x_lower_diabatic[i]) 
+    plt.errorbar(x_val_adiabatic, y_val_adiabatic, xerr=[x_err_adiabatic[:,0],x_err_adiabatic[:,1]], fmt='o', capsize=2, label = "AQA", markersize = 4)
+    plt.errorbar(x_val_diabatic, y_val_diabatic,xerr=[x_err_diabatic[:,0],x_err_diabatic[:,1]], fmt='o', capsize=2, label = "DQA", markersize = 4)
     plt.legend()
     plt.show()
 
@@ -1346,10 +1369,46 @@ def plot_graph_adiabatic():
         
 
 
+def max_error_estimation_AQA(k,t_max,n,M,B,J):
+
+    delta_t = t_max/k
+
+    H_p = problem_hamiltonian(M,B,J,n)
+
+    H = np.zeros((2**n,2**n), dtype = complex)
+
+    I = np.eye(2**n, dtype = complex)
+
+    for i in range(0,k+1):  #we want to include k - so will have k+1 total instances!!
+
+        H_instance = Time_dependent_Hamiltonian(n,i*delta_t,t_max,H_p)
+
+        H += H_instance
 
 
+    average_err = (k+1)*(expm(-1j*H*t_max/(k+1)**2)- I + (1j*H*t_max/(k+1)**2))   #double check this - might be - !!
+
+    return np.max(eigh(average_err)[0])  #i.e. finding the maximum expectation value! 
 
 
+def max_error_estimation_DQA(k,t_max,n,M,B,J,target_qubit):  #target_qubit shouldn't matter?
+
+    dt = t_max/k
+
+    H = np.zeros((2**n,2**n), dtype = complex)
+
+    I = np.eye(2**n, dtype = complex)
+
+    for i in range(0,k+1):  #we want to include k - so will have k+1 total instances!!
+
+        H_instance = problem_hamiltonian_DQA(i*dt,t_max,target_qubit,n,M,B,J)+driver_hamiltonian_DQA(i*dt,t_max,target_qubit,n,B) -M*I #this would only produce error for after 
+
+        H += H_instance
+
+
+    average_err = (k+1)*(expm(-1j*H*t_max/(k+1)**2)- I + (1j*H*t_max/(k+1)**2))   #double check this - might be - !!
+
+    return np.max(eigh(average_err)[0])  #i.e. finding the maximum expectation value! 
 
 
 
@@ -1359,7 +1418,7 @@ def plot_graph_adiabatic():
     
 
 
-def phase_transition(target_qubit,t_max,n,M,B,J,AQA =False,q=100,r=1,first_excited_state = False):
+def phase_transition(target_qubit,t_max,n,M,B,J,q=100,r=1,first_excited_state = False):
 
     initial_p_h = problem_hamiltonian_DQA(0,t_max,target_qubit,n,M,B,J)
     initial_d_h = driver_hamiltonian_DQA(0,t_max,target_qubit,n,B)
@@ -1377,6 +1436,59 @@ def phase_transition(target_qubit,t_max,n,M,B,J,AQA =False,q=100,r=1,first_excit
     for i in range(0,q+1):
 
         Hamiltonian_at_time_instance = problem_hamiltonian_DQA(i*dt,t_max,target_qubit,n,M,B,J)+driver_hamiltonian_DQA(i*dt,t_max,target_qubit,n,B)
+        
+        # state = np.dot(expm(-1j*dt*Hamiltonian_at_time_instance),state)
+        
+        # for qubit in range(1,n+1):  #we want to access indexes 0 to n-1
+
+        #     average_magnetisation = state@(sigma_z(n,qubit)@state)   #should be between -1 and 1!!? check this...
+
+        #     average_magnetisation_values[i,qubit-1] = average_magnetisation
+        
+        
+
+        if first_excited_state:
+            eigenvector =  eigh(Hamiltonian_at_time_instance)[1][:,1]
+        else:
+            eigenvector = eigh(Hamiltonian_at_time_instance)[1][:,0]
+
+
+        for qubit in range(1,n+1):  #we want to access indexes 0 to n-1
+
+             average_magnetisation = eigenvector@(sigma_z(n,qubit)@eigenvector)   #should be between -1 and 1!!? check this...
+
+             average_magnetisation_values[i,qubit-1] = average_magnetisation
+
+
+    x_val = np.linspace(0,1,q+1)
+
+    for qubit in range(n):
+
+        # if not qubit == target_qubit-1:
+
+        plt.plot(x_val, average_magnetisation_values[:,qubit], label = "qubit "+str(qubit+1))
+    # plt.plot(x_val, average_magnetisation_values[:,target_qubit-1])
+    plt.legend()
+    plt.show()
+
+def phase_transition_AQA(t_max,n,M,B,J,q=100,r=1,first_excited_state = False):
+
+    problem_H = problem_hamiltonian(M,B,J,n)
+    # initial_hamiltonian = Time_dependent_Hamiltonian(n,0,t_max,)
+
+    # eigenvectors = eigh(initial_hamiltonian)[1]
+    # first_eigenvector = eigenvectors[:,0]
+   
+
+
+      #start the annealing process
+
+    dt = t_max/(q)
+    average_magnetisation_values = np.zeros((q+1,n), dtype = complex)  #index from 0 to q array
+
+    for i in range(0,q+1):
+
+        Hamiltonian_at_time_instance = Time_dependent_Hamiltonian(n,i*dt,t_max,problem_H)
         
         # state = np.dot(expm(-1j*dt*Hamiltonian_at_time_instance),state)
         
@@ -1713,25 +1825,94 @@ clauses_8 = np.array([[0,4,5],[0,3,5],[0,1,5],[2,3,4],[1,3,5]]) #n=6, target qub
 #MOST IMPORTANT - there seems to be a lot of variation, but within this variation, it is always the case that DQA triumphs!! but why...
 #test lower clause limits..?
 
+# n=8
+
+# M,B,J,min_index = problem_generation_from_clauses(n,clauses_1)
+
+
+
+# n=10
+
 n=6
-
-# M,B,J,min_index = problem_generation_from_clauses(n,clauses_7)
-
-
-
-
+q = 10000
+t_max_AQA = 400
+t_max = 100
+target_qubit = 3
 
 # M, B, J, min_index = unique_satisfiability_problem_generation(n, USA = True, DQA = True)   #save a problem!!!! and also try change the starting hamiltonian maybe??? adapt it perhaps!? solving the decision problem only requires that the final hamiltonian is 
 
 # np.savez("USA_values.npz", integer=M, array_1D=B, array_2D=J, index = min_index)
 # print("saved")
 
+data = np.load("USA_values.npz")
+M = data["integer"].item()
+B = data["array_1D"]
+J = data["array_2D"]
+min_index = data["index"].item()
 
-# data = np.load("USA_values.npz")
-# M = data["integer"].item()
-# B = data["array_1D"]
-# J = data["array_2D"]
-# min_index = data["index"].item()
+
+#we are doing for AQA first....
+
+
+q_param = np.linspace(100,10000,100).astype(int)
+t_param = np.linspace(10,400,100).astype(int)
+
+# print(q_param)
+
+n_q = 100
+n_t = 100
+
+# print(max_error_estimation_AQA(q,t_max_AQA,n,M,B,J))
+
+# q_param = np.linspace(100,10000,5).astype(int)
+# t_param = np.linspace(10,400,10).astype(int)
+
+# n_q = 10
+# n_t = 10
+
+
+
+error_results_AQA = np.zeros((n_q,n_t))
+
+for index_q, q in enumerate(q_param):  #y
+    print(index_q)
+
+    for index_t, t in enumerate(t_param):  #x
+
+        err = max_error_estimation_AQA(q,t,n,M,B,J)
+
+        if err > 1:
+            err = 1
+        error_results_AQA[index_q,index_t] = err**2
+
+plt.figure(figsize=(8, 6))
+plt.imshow(error_results_AQA, origin='lower', cmap='RdBu_r', aspect='auto')
+plt.colorbar()
+# plt.xlabel('t_max')
+# plt.ylabel('q')
+
+x_ticks = [0, len(t_param) // 2, len(t_param) - 1]
+y_ticks = [0, len(q_param) // 2, len(q_param) - 1]
+
+# Optional: set tick labels to actual param values
+plt.xticks(ticks=x_ticks, labels=t_param[x_ticks])
+plt.yticks(ticks=y_ticks, labels=q_param[y_ticks])
+
+
+plt.savefig('my_plot.png')
+plt.show()
+
+
+
+
+
+# AQA_error = max_error_estimation_AQA(q,t_max_AQA,n,M,B,J)
+
+# DQA_error = max_error_estimation_DQA(q,t_max,n,M,B,J,target_qubit)
+
+# print(AQA_error)
+# print(DQA_error)
+
 
 
 
@@ -1742,12 +1923,16 @@ n=6
 
 # H = problem_hamiltonian(M,B,J,n)
 
-# Hamiltonian_spectrum(n,t_max,q,H)
+# Hamiltonian_spectrum(n,t_max,q,H,number_of_eigenvalues=4)
+
+# phase_transition_AQA(t_max,n,M,B,J)
+
+
 
 # diabatic_test_eigenspectrum(target_qubit,t_max,n,M,B,J)
 
-# # # E_res_DQA(threshold_E_res,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,q=200)
-# # E_res_AQA(threshold_E_res,n,M,B,J,t_max_starting_value,t_max_step)
+# # E_res_DQA(threshold_E_res,target_qubit,n,M,B,J,t_max_starting_value,t_max_step,q=200)
+# # # E_res_AQA(threshold_E_res,n,M,B,J,t_max_starting_value,t_max_step)
 
 # phase_transition(target_qubit,t_max,n,M,B,J, first_excited_state=False)
 
@@ -1834,6 +2019,73 @@ def susceptibiity_graph(target_qubit,t_max,n,M,B,J,AQA =False,q=100,r=1,first_ex
     # plt.legend()
     # plt.show()
 
+
+
+def susceptibiity_graph(target_qubit,t_max,n,M,B,J,AQA =False,q=100,r=1,first_excited_state = False, second_deriv = False):
+
+    initial_p_h = problem_hamiltonian_DQA(0,t_max,target_qubit,n,M,B,J)
+    initial_d_h = driver_hamiltonian_DQA(0,t_max,target_qubit,n,B)
+    initial_hamiltonian = initial_d_h+initial_p_h
+    eigenvectors = eigh(initial_hamiltonian)[1]
+    first_eigenvector = eigenvectors[:,0]
+   
+
+
+      #start the annealing process
+
+    dt = t_max/(q)
+    average_magnetisation_values = np.zeros((q+1,n), dtype = complex)  #index from 0 to q array
+
+    for i in range(0,q+1):
+
+        Hamiltonian_at_time_instance = problem_hamiltonian_DQA(i*dt,t_max,target_qubit,n,M,B,J)+driver_hamiltonian_DQA(i*dt,t_max,target_qubit,n,B)
+        
+        # state = np.dot(expm(-1j*dt*Hamiltonian_at_time_instance),state)
+        
+        # for qubit in range(1,n+1):  #we want to access indexes 0 to n-1
+
+        #     average_magnetisation = state@(sigma_z(n,qubit)@state)   #should be between -1 and 1!!? check this...
+
+        #     average_magnetisation_values[i,qubit-1] = average_magnetisation
+        
+        
+
+        if first_excited_state:
+            eigenvector =  eigh(Hamiltonian_at_time_instance)[1][:,1]
+        else:
+            eigenvector = eigh(Hamiltonian_at_time_instance)[1][:,0]
+
+
+        for qubit in range(1,n+1):  #we want to access indexes 0 to n-1
+
+             average_magnetisation = eigenvector@(sigma_z(n,qubit)@eigenvector)   #should be between -1 and 1!!? check this...
+
+             average_magnetisation_values[i,qubit-1] = average_magnetisation
+
+
+    x_val = np.linspace(0,1,q+1)
+
+    delta_x = x_val[1]-x_val[0]
+
+    susceptibility_values = np.zeros((q+1, n), dtype = complex)
+
+    Xi_deriv_values = np.zeros((q+1,n),dtype = complex)
+
+    for qubit in range(n): #0 to n-1
+
+        susceptibility_values[:,qubit] = np.gradient(average_magnetisation_values[:,qubit],delta_x)
+
+        if second_deriv:
+
+            Xi_deriv_values[:,qubit] = np.gradient(susceptibility_values[:,qubit],delta_x)
+
+            plt.plot(x_val, Xi_deriv_values[:,qubit], label = "for qubit "+str(qubit+1))
+        else:
+
+            plt.plot(x_val, susceptibility_values[:,qubit], label = "for qubit "+str(qubit+1))
+
+    plt.ylim(-10,10)
+    plt.show()
 
 
 # susceptibiity_graph(target_qubit,t_max,n,M,B,J, first_excited_state=False, second_deriv=False)
@@ -2261,10 +2513,11 @@ def run_ratio(n,rerun = False, save = True):
 
 
 
-for i in range(10):
+# for i in range(10):
+    
+#     run_ratio(9)
     
     
-    run_ratio(8)
 
 
 
@@ -2276,10 +2529,16 @@ for i in range(10):
 
 
 
+#test for different inhomogenous field values!!! but this would require redefinitions of starting states...
+#when is 1/B, doesn't work well... over 400
+#when is B, works similar or better? maybe doesn't work better? we can check this... 210 -220 ish
+#then for just one -about the same, 210...
 
+#show that the phase transitions don't change!!
 
+#changing B changes position of phase transitions, but not the fact that phase transitions don't happen?!
 
-
+#is it worth exploring as a potential fix?
 
 
 
